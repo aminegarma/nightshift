@@ -52,12 +52,12 @@ The first version must prove four things:
 - **Path:** Nightshift explains the problem in plain words and proposes a rollback. Cris approves.
 - **Climax:** the rollback is done, and Nightshift confirms the recovery once it has checked that checkout works again.
 - **Resolution:** checkout is back; the action and his approval are in the record and the morning summary.
-- **Edge case:** if the rollback is a risky repair, Orvex technical approval from the Nightshift team is needed as well as Cris's approval (FR-21, provisional design for the customer's own app), so Cris is told that Orvex technical approval is still needed.
+- **Edge case:** if the rollback is a risky repair, Orvex technical approval from the Nightshift team is needed as well as Cris's approval (FR-21, our conservative interpretation of Danny's approval model for the customer's own app), so Cris is told that Orvex technical approval is still needed.
 - Realises FR-11, FR-13, FR-14, FR-21, FR-25.
 
 **UJ-3. Josh approves a ticked risky repair.** *(Drafted by the AI from FR-21; accepted by Amine, 2026-10-31.)*
 - **Persona and context:** Josh is the Nightshift engineer on night duty.
-- **Entry:** a customer's service has memory creep and runs as a single replica. The repair, restarting the only replica, is risky; the customer has ticked it in their settings, so it needs only Orvex technical approval, which Josh gives (FR-21, provisional design for the customer's own app).
+- **Entry:** a customer's service has memory creep and runs as a single replica. The repair, restarting the only replica, is risky; the customer has ticked it in their settings, so it needs only Orvex technical approval, which Josh gives (FR-21, our conservative interpretation of Danny's approval model for the customer's own app).
 - **Path:** Josh is notified in Slack and opens the request in the portal, where he signs in (FR-14). He sees the facts from the rule-based checks (memory trend, time to impact) separately from the AI's explanation, plus the customer's tick and the repair's safety conditions.
 - **Climax:** he approves. Nightshift re-checks the conditions, restarts the replica, verifies that the service recovered, and records everything.
 - **Resolution:** the customer sees it in the morning summary.
@@ -379,7 +379,7 @@ Orvex operates OMK and Quornex, so not every repair needs both the customer's ap
 - **Who decides whether a repair can affect customer production:** each repair catalogue entry states it. Orvex sets it when testing the entry, with the two reviewers of FR-39, and the customer can read it in the portal. The executor re-checks it before every run; if the pre-run checks show that a platform repair can affect customer production, or if the classification is in doubt, the customer-production row applies. The customer can dispute an entry's classification; until Orvex has reviewed it again, a disputed entry follows the customer-production row for that customer (Amine, 2026-11-02, after the review of the update).
 - The customer ticks once, from the repair catalogue, so they are not disturbed every time (Amine). A tick counts as the customer's approval only for the specific tested action and conditions it covers (Amine's interpretation of Danny, Exchange 5; not confirmed by Danny).
 - Where the table says "the customer's approval", Orvex support may give it instead if the customer has delegated approval to them (Danny, Exchange 1). The customer sets the delegation's scope, can revoke it at any time, and is notified of every approval given on their behalf (review fix, 2026-10-31, approved by Amine). Where both the customer's approval and Orvex technical approval are required, they come from different people, even when Orvex support approves on the customer's behalf (Amine, 2026-11-03, review of the update).
-- Requiring Orvex technical approval as well as the customer's for risky repairs to the customer's own app (not OMK or Quornex) is our provisional design, kept from the product brief so the customer cannot damage their own app. Danny's Exchange 5 does not address it, so it is not a rule he has confirmed (Amine, 2026-11-02; Section 10, item 21).
+- Risky repairs to the customer's own app (not OMK or Quornex) need Orvex technical approval as well as the customer's. This is our conservative interpretation of Danny's approval model: Exchange 5 speaks about platform changes, and we keep the product brief's rule so the customer cannot damage their own app. It is a decided policy, not an open question (Amine, 2026-11-02; reworded 2026-11-03).
 - A prohibited action can never be ticked or approved (product brief).
 - A successful history can support a reviewed reclassification of a repair, but never lowers its risk level or removes approvals automatically (Amine, 2026-10-30).
 
@@ -554,7 +554,7 @@ Nightshift may tune the cluster's settings only within the limits set by the tes
 1. Nightshift proposes a fix for the detected problem.
 2. Orvex tests and approves it, to verify that it works and to assess its risks.
 3. The fix enters the repair catalogue with its requirements, risk level and rollback procedure: as a fleet-wide entry if it is reusable, otherwise as a **customer-specific entry** that only that customer can access or execute (Amine). Registering every fix keeps Orvex's work traceable (Amine).
-4. The customer's authorisation is checked according to FR-21. A code fix changes the customer's own app, so the customer-production row applies: a risky code fix needs the customer's tick or approval and Orvex technical approval (provisional design, see FR-21), and a dangerous code fix is not deployed by Nightshift but left to a person (FR-52).
+4. The customer's authorisation is checked according to FR-21. A code fix changes the customer's own app, so the customer-production row applies: a risky code fix needs the customer's tick or approval and Orvex technical approval (our conservative interpretation of Danny's approval model, see FR-21), and a dangerous code fix is not deployed by Nightshift but left to a person (FR-52).
 5. Nightshift deploys the fix if deployment is supported and authorised.
 6. Nightshift verifies the outcome and records the result.
 
@@ -761,7 +761,7 @@ All targets are proposed acceptance targets, not observed performance (product b
 
 ## 10. Open questions
 
-Triage (Amine, 2026-10-31; updated 2026-11-02 after Danny's Exchange 5 and 2026-11-03 after the UX work): none of the remaining items blocks UX or architecture. Danny's open questions (5–7b, 19–21) are owned by Danny and revisited when he replies; our proposals stand meanwhile. Questions 19–21 have not been sent yet; Amine decides whether to send them. Timing targets (8) go to the architecture and UX to propose and test. Approval validity (18) and channel defaults (22) were decided in the UX work (Amine, 2026-11-03). Targets still to set (12) and the items to test (13–17) are owned by Orvex and revisited in the controlled tests and on the first 100 clusters. Item 23 (legal basis for the pre-ticked service settings) goes to a legal review, owned by Orvex.
+Triage (Amine, 2026-10-31; updated 2026-11-02 after Danny's Exchange 5 and 2026-11-03 after the UX work): none of the remaining items blocks UX or architecture. Danny's open questions (5–7b, 19, 20) are owned by Danny and revisited when he replies; our proposals stand meanwhile. Questions 19 and 20 have not been sent yet; Amine decides whether to send them. Item 21 is decided (Amine, 2026-11-03). Timing targets (8) go to the architecture and UX to propose and test. Approval validity (18) and channel defaults (22) were decided in the UX work (Amine, 2026-11-03). Targets still to set (12) and the items to test (13–17) are owned by Orvex and revisited in the controlled tests and on the first 100 clusters. Item 23 (legal basis for the pre-ticked service settings) goes to a legal review, owned by Orvex.
 
 **For Danny** (not yet asked unless stated):
 - **5.** What monitoring and night cover does Orvex have today?
@@ -770,7 +770,6 @@ Triage (Amine, 2026-10-31; updated 2026-11-02 after Danny's Exchange 5 and 2026-
 - **7b.** How should code fixes be priced? (Amine's proposal: by tokens or difficulty; Danny has not addressed it.)
 - **19.** Who decides what counts as a "high-confidence" repair: Orvex, the customer, or both? (danny-qa #3, never sent.) Our current answer: the repair catalogue entry defines the evidence needed to match it (FR-18).
 - **20.** What happens when an approval request gets no answer, for example at 3 AM? (danny-qa #4, never sent.) Our proposal is FR-23.
-- **21.** Do risky repairs to the customer's own app need Orvex technical approval as well as the customer's? Exchange 5 covers platform changes only. Our provisional design is yes (FR-21; Amine, 2026-11-02).
 
 **Design decisions still open:**
 - **8.** How long a node heartbeat may be missing before it counts as missing, and other timing targets (FR-2, FR-15, NFR-7).
@@ -795,6 +794,7 @@ Triage (Amine, 2026-10-31; updated 2026-11-02 after Danny's Exchange 5 and 2026-
 - **10.** Whether a customer control cluster runs its own Nightshift agent: decided, yes; Fleet watches it like any other (FR-6).
 - **11.** Whether a code fix can be approved on automated test results alone: decided, no, the patch is rejected (FR-44).
 - **18.** How long an approval stays valid before it expires: decided, each repair catalogue entry states it; Orvex sets the value when testing the entry (FR-22; Amine, 2026-11-03, UX work).
+- **21.** Whether risky repairs to the customer's own app need Orvex technical approval as well as the customer's: decided, yes, as our conservative interpretation of Danny's approval model; not asked again, since it does not change the architecture (FR-21; Amine, 2026-11-03).
 - **22.** The default state of each outbound channel at onboarding: decided, the Fleet heartbeat is required with the managed service; Fleet reports, notifications and the portal start ticked; external AI starts with nothing preselected (PRIV-9; Amine, 2026-11-03, UX work).
 
 ## 11. Requirements for the other deliverables

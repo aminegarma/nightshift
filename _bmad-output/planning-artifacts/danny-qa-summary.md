@@ -69,4 +69,4 @@ Questions sent around 2026-10-30; reply received 2026-11-02.
 ## Follow-ups
 
 - Answered: who approves platform changes (Exchange 5), the privacy boundary (Exchange 5, as a starting point), whether the extra Orvex approval fits (Exchange 5), reliability as a number (Exchange 5), code fixes (Exchange 2), cost (Exchange 3), whose hardware it is (Exchange 4). Hand-in: between 10 and 14 November 2026 (Amine, 2026-10-30).
-- **Never sent, still open:** who decides what counts as a "high-confidence" repair; what happens when an approval request gets no answer at night; what monitoring and night cover Orvex has today; whether risky repairs to the customer's own app need Orvex approval as well (PRD Section 10, items 5, 19, 20 and 21).
+- **Never sent, still open:** who decides what counts as a "high-confidence" repair; what happens when an approval request gets no answer at night; what monitoring and night cover Orvex has today (PRD Section 10, items 5, 19 and 20). Risky repairs to the customer's own app keep both approvals, as our conservative interpretation of Danny's approval model (FR-21); this is decided and not asked again.
