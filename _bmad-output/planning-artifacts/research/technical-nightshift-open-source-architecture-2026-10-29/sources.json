@@ -1,0 +1,1899 @@
+[
+  {
+    "url": "https://github.com/prometheus/prometheus",
+    "label": "Prometheus",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://docs.victoriametrics.com/victoriametrics/",
+    "label": "VictoriaMetrics OSS",
+    "publisher_host": "docs.victoriametrics.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/fluent/fluent-bit",
+    "label": "Fluent Bit",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-telemetry/opentelemetry-collector",
+    "label": "OTel Collector",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/vectordotdev/vector",
+    "label": "Vector",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/loki",
+    "label": "Loki",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/opensearch-project/OpenSearch",
+    "label": "OpenSearch",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus/node_exporter",
+    "label": "node_exporter",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kubernetes/kube-state-metrics",
+    "label": "kube-state-metrics",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kubernetes/node-problem-detector",
+    "label": "NPD",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus-community/smartctl_exporter",
+    "label": "smartctl_exporter",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/AnalogJ/scrutiny",
+    "label": "Scrutiny",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus-community/ipmi_exporter",
+    "label": "ipmi_exporter",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/comcast/fishymetrics",
+    "label": "fishymetrics",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/healthchecks/healthchecks",
+    "label": "Healthchecks",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md",
+      "digests/observability.md",
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus/blackbox_exporter",
+    "label": "blackbox_exporter",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/#predict_linear",
+    "label": "Prometheus rules/functions",
+    "publisher_host": "prometheus.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/online-ml/river",
+    "label": "River",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/yzhao062/pyod",
+    "label": "PyOD",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/HolmesGPT/holmesgpt",
+    "label": "HolmesGPT",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/k8sgpt-ai/k8sgpt",
+    "label": "K8sGPT",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kagent-dev/kagent",
+    "label": "kagent",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/jaegertracing/jaeger",
+    "label": "Jaeger",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/tempo",
+    "label": "Tempo",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://prometheus.io/docs/prometheus/latest/storage/",
+    "label": "Prometheus storage",
+    "publisher_host": "prometheus.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://opentelemetry.io/docs/collector/resiliency/",
+    "label": "OTel resilience",
+    "publisher_host": "opentelemetry.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://docs.fluentbit.io/manual/data-pipeline/buffering.md",
+    "label": "Fluent Bit buffering",
+    "publisher_host": "docs.fluentbit.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://vector.dev/docs/architecture/buffering-model/",
+    "label": "Vector buffering",
+    "publisher_host": "vector.dev",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://grafana.com/docs/loki/latest/operations/authentication/",
+    "label": "authentication layer",
+    "publisher_host": "grafana.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://docs.opensearch.org/latest/install-and-configure/install-opensearch/index/",
+    "label": "installation guide",
+    "publisher_host": "docs.opensearch.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://www.zabbix.com/life_cycle_and_release_policy",
+    "label": "LTS lifecycle",
+    "publisher_host": "www.zabbix.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://www.zabbix.com/license",
+    "label": "license policy",
+    "publisher_host": "www.zabbix.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://www.zabbix.com/documentation/current/en/manual/distributed_monitoring/proxies",
+    "label": "proxy documentation",
+    "publisher_host": "www.zabbix.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/netdata/netdata",
+    "label": "repository",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/netdata/netdata/releases",
+    "label": "v2.12.0 release notes",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kubernetes-sigs/controller-runtime",
+    "label": "controller-runtime",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/argoproj/argo-workflows",
+    "label": "Argo Workflows",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/temporalio/temporal",
+    "label": "Temporal",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/StackStorm/st2",
+    "label": "StackStorm",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/medik8s/node-healthcheck-operator",
+    "label": "Medik8s NHC",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/medik8s/self-node-remediation",
+    "label": "SNR",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-policy-agent/opa",
+    "label": "OPA",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cedar-policy/cedar",
+    "label": "Cedar",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/redactionprocessor",
+    "label": "OTel redaction",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/data-privacy-stack/presidio",
+    "label": "Presidio",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/BerriAI/litellm",
+    "label": "LiteLLM OSS",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/ggml-org/llama.cpp",
+    "label": "llama.cpp",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/vllm-project/vllm",
+    "label": "vLLM",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/ollama/ollama",
+    "label": "Ollama",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/fluxcd/flux2",
+    "label": "Flux",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/argoproj/argo-cd",
+    "label": "Argo CD",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-cluster-management-io/ocm",
+    "label": "OCM",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/nats-io/nats-server",
+    "label": "NATS JetStream",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://www.sqlite.org/copyright.html",
+    "label": "SQLite",
+    "publisher_host": "www.sqlite.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://www.postgresql.org/about/licence/",
+    "label": "PostgreSQL",
+    "publisher_host": "www.postgresql.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/keycloak/keycloak",
+    "label": "Keycloak",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/dexidp/dex",
+    "label": "Dex",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/spiffe/spire",
+    "label": "SPIRE",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cert-manager/cert-manager",
+    "label": "cert-manager",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/openbao/openbao",
+    "label": "OpenBao",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/getsops/sops",
+    "label": "SOPS",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus/alertmanager",
+    "label": "Alertmanager",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/binwiederhier/ntfy",
+    "label": "ntfy",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/gotify/server",
+    "label": "Gotify",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/grafana",
+    "label": "Grafana",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://argo-workflows.readthedocs.io/en/latest/workflow-restrictions/",
+    "label": "restricted template execution",
+    "publisher_host": "argo-workflows.readthedocs.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://argo-workflows.readthedocs.io/en/latest/walk-through/suspending/",
+    "label": "suspension",
+    "publisher_host": "argo-workflows.readthedocs.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://www.openpolicyagent.org/docs/security",
+    "label": "security documentation",
+    "publisher_host": "www.openpolicyagent.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://docs.cedarpolicy.com/auth/authorization.html",
+    "label": "Cedar authorization",
+    "publisher_host": "docs.cedarpolicy.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/rancher/fleet",
+    "label": "Rancher Fleet",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://fleet.rancher.io/",
+    "label": "documentation",
+    "publisher_host": "fleet.rancher.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/rancher/fleet/releases",
+    "label": "release stream",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://www.dmtf.org/standards/redfish",
+    "label": "DMTF management standard",
+    "publisher_host": "www.dmtf.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://docs.aws.amazon.com/eks/latest/userguide/fargate.html",
+    "label": "Fargate restrictions",
+    "publisher_host": "docs.aws.amazon.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://docs.aws.amazon.com/eks/latest/userguide/node-health.html",
+    "label": "node health behavior",
+    "publisher_host": "docs.aws.amazon.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://docs.aws.amazon.com/eks/latest/userguide/node-repair.html",
+    "label": "repair settings",
+    "publisher_host": "docs.aws.amazon.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html",
+    "label": "control-plane logging",
+    "publisher_host": "docs.aws.amazon.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://holmesgpt.dev/latest/data-sources/builtin-toolsets/bash/",
+    "label": "Bash toolset documentation",
+    "publisher_host": "holmesgpt.dev",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://presidio.dataprivacystack.org/faq/",
+    "label": "FAQ",
+    "publisher_host": "presidio.dataprivacystack.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://docs.ollama.com/faq",
+    "label": "Ollama's FAQ",
+    "publisher_host": "docs.ollama.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://docs.vllm.ai/en/latest/usage/security/",
+    "label": "vLLM security guidance",
+    "publisher_host": "docs.vllm.ai",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md",
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html",
+    "label": "Postgres RLS",
+    "publisher_host": "www.postgresql.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://docs.nats.io/learn/security/accounts-and-multitenancy",
+    "label": "NATS accounts",
+    "publisher_host": "docs.nats.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "research.md"
+    ]
+  },
+  {
+    "url": "https://github.com/zabbix/zabbix",
+    "label": "https://github.com/zabbix/zabbix",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/additional-screen.md"
+    ]
+  },
+  {
+    "url": "https://github.com/HolmesGPT/holmesgpt/releases",
+    "label": "HolmesGPT releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/k8sgpt-ai/k8sgpt/releases",
+    "label": "K8sGPT releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kagent-dev/kagent/releases",
+    "label": "kagent releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://holmesgpt.dev/0.43.0/data-sources/cross-cluster-tools/",
+    "label": "cross-cluster tools",
+    "publisher_host": "holmesgpt.dev",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+    "label": "Prometheus function reference",
+    "publisher_host": "prometheus.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://riverml.xyz/latest/api/overview/",
+    "label": "River API",
+    "publisher_host": "riverml.xyz",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/yzhao062/pyod/releases",
+    "label": "PyOD 3.6.7",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/online-ml/river/releases",
+    "label": "River 0.26.1",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/data-privacy-stack/presidio/releases",
+    "label": "Presidio releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/BerriAI/litellm/blob/main/LICENSE",
+    "label": "license",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://docs.litellm.ai/docs/enterprise",
+    "label": "edition matrix",
+    "publisher_host": "docs.litellm.ai",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://docs.litellm.ai/docs/enterprise/version_support",
+    "label": "Version support",
+    "publisher_host": "docs.litellm.ai",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/BerriAI/litellm/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md",
+    "label": "llama.cpp server reference",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/vllm-project/vllm/releases",
+    "label": "vLLM v0.32.0",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/ggml-org/llama.cpp/releases",
+    "label": "llama.cpp",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/ollama/ollama/releases",
+    "label": "Ollama v0.40.13",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/ai-privacy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cedar-policy/cedar/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/keycloak/keycloak/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/dexidp/dex/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/spiffe/spire/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/openbao/openbao/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cert-manager/cert-manager/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/getsops/sops/releases",
+    "label": "Official releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://www.postgresql.org/support/versioning/",
+    "label": "Official version policy",
+    "publisher_host": "www.postgresql.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://sqlite.org/changes.html",
+    "label": "Official release history",
+    "publisher_host": "sqlite.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://fluxcd.io/flux/components/source/ocirepositories/",
+    "label": "https://fluxcd.io/flux/components/source/ocirepositories/",
+    "publisher_host": "fluxcd.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://fluxcd.io/flux/security/best-practices/",
+    "label": "https://fluxcd.io/flux/security/best-practices/",
+    "publisher_host": "fluxcd.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://argo-cd.readthedocs.io/en/stable/operator-manual/high_availability/",
+    "label": "https://argo-cd.readthedocs.io/en/stable/operator-manual/high_availability/",
+    "publisher_host": "argo-cd.readthedocs.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://open-cluster-management.io/docs/concepts/architecture/",
+    "label": "https://open-cluster-management.io/docs/concepts/architecture/",
+    "publisher_host": "open-cluster-management.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://docs.nats.io/concepts/jetstream",
+    "label": "https://docs.nats.io/concepts/jetstream",
+    "publisher_host": "docs.nats.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://docs.nats.io/learn/topologies/leaf-nodes",
+    "label": "https://docs.nats.io/learn/topologies/leaf-nodes",
+    "publisher_host": "docs.nats.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://www.sqlite.org/whentouse.html",
+    "label": "https://www.sqlite.org/whentouse.html",
+    "publisher_host": "www.sqlite.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/fluxcd/flux2/releases",
+    "label": "https://github.com/fluxcd/flux2/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-policy-agent/opa/releases",
+    "label": "https://github.com/open-policy-agent/opa/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-cluster-management-io/ocm/releases",
+    "label": "https://github.com/open-cluster-management-io/ocm/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://github.com/nats-io/nats-server/releases",
+    "label": "https://github.com/nats-io/nats-server/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/fleet-policy.md"
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/prometheus-community/ipmi_exporter/master/README.md",
+    "label": "README",
+    "publisher_host": "raw.githubusercontent.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/sapcc/redfish-exporter",
+    "label": "Repository",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/prometheus-community/smartctl_exporter/master/README.md",
+    "label": "README",
+    "publisher_host": "raw.githubusercontent.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/AnalogJ/scrutiny/master/README.md",
+    "label": "README",
+    "publisher_host": "raw.githubusercontent.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/e-breuninger/redfish-exporter",
+    "label": "e-breuninger",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/G-PORTAL/redfish_exporter",
+    "label": "G-PORTAL",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/kubernetes/node-problem-detector/master/README.md",
+    "label": "README",
+    "publisher_host": "raw.githubusercontent.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://docs.aws.amazon.com/pdfs/eks/latest/userguide/eks-ug.pdf",
+    "label": "AWS guide, node-health visibility section",
+    "publisher_host": "docs.aws.amazon.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/medik8s/node-healthcheck-operator/main/README.md",
+    "label": "NHC README",
+    "publisher_host": "raw.githubusercontent.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://www.medik8s.io/remediation/self-node-remediation/how-it-works/",
+    "label": "SNR behavior",
+    "publisher_host": "www.medik8s.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://www.medik8s.io/remediation/self-node-remediation/known-issues/",
+    "label": "Known issues",
+    "publisher_host": "www.medik8s.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://www.medik8s.io/remediation/fence-agents-remediation/limitations/",
+    "label": "FAR limitations",
+    "publisher_host": "www.medik8s.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/main/README.md",
+    "label": "compatibility/versioning",
+    "publisher_host": "raw.githubusercontent.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://docs.temporal.io/self-hosted-guide/deployment",
+    "label": "Deployment",
+    "publisher_host": "docs.temporal.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://docs.stackstorm.com/install/system_requirements.html",
+    "label": "Requirements",
+    "publisher_host": "docs.stackstorm.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus-community/ipmi_exporter/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/Comcast/fishymetrics/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus-community/smartctl_exporter/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/AnalogJ/scrutiny/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/medik8s/node-healthcheck-operator/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/medik8s/self-node-remediation/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kubernetes-sigs/controller-runtime/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/argoproj/argo-workflows/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/temporalio/temporal/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://github.com/StackStorm/st2/releases",
+    "label": "Releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/hardware-execution.md"
+    ]
+  },
+  {
+    "url": "https://opentelemetry.io/docs/collector/deploy/",
+    "label": "deployment",
+    "publisher_host": "opentelemetry.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://grafana.com/docs/loki/latest/get-started/overview/",
+    "label": "overview",
+    "publisher_host": "grafana.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus/prometheus/releases",
+    "label": "https://github.com/prometheus/prometheus/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/VictoriaMetrics/VictoriaMetrics/releases",
+    "label": "https://github.com/VictoriaMetrics/VictoriaMetrics/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/open-telemetry/opentelemetry-collector/releases",
+    "label": "https://github.com/open-telemetry/opentelemetry-collector/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/fluent/fluent-bit/releases",
+    "label": "https://github.com/fluent/fluent-bit/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/vectordotdev/vector/releases",
+    "label": "https://github.com/vectordotdev/vector/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/loki/releases",
+    "label": "https://github.com/grafana/loki/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/opensearch-project/OpenSearch/releases",
+    "label": "https://github.com/opensearch-project/OpenSearch/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus/node_exporter/releases",
+    "label": "https://github.com/prometheus/node_exporter/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kubernetes/kube-state-metrics/releases",
+    "label": "https://github.com/kubernetes/kube-state-metrics/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/kubernetes/node-problem-detector/releases",
+    "label": "https://github.com/kubernetes/node-problem-detector/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/prometheus/blackbox_exporter/releases",
+    "label": "https://github.com/prometheus/blackbox_exporter/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md"
+    ]
+  },
+  {
+    "url": "https://github.com/healthchecks/healthchecks/releases",
+    "label": "https://github.com/healthchecks/healthchecks/releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/observability.md",
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/grafana/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/tempo/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/jaegertracing/jaeger/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/falcosecurity/falco",
+    "label": "Source",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/falcosecurity/falco/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://falco.org/docs/setup/kubernetes/",
+    "label": "Kubernetes deployment",
+    "publisher_host": "falco.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cilium/tetragon",
+    "label": "Source",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cilium/tetragon/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://tetragon.io/docs/getting-started/install-k8s/",
+    "label": "installation",
+    "publisher_host": "tetragon.io",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/chaos-mesh/chaos-mesh",
+    "label": "Source",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/chaos-mesh/chaos-mesh/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/chaostoolkit/chaostoolkit",
+    "label": "Source",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/chaostoolkit/chaostoolkit/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://chaostoolkit.org/reference/usage/run/",
+    "label": "execution",
+    "publisher_host": "chaostoolkit.org",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/grafana/security",
+    "label": "Grafana security",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/grafana/tempo/security",
+    "label": "Tempo security",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/jaegertracing/jaeger/security",
+    "label": "policy",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/falcosecurity/falco/security",
+    "label": "policy/advisories",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/cilium/tetragon/security",
+    "label": "Security page",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/chaos-mesh/chaos-mesh/security",
+    "label": "Policy",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/chaostoolkit/chaostoolkit/security",
+    "label": "Retrieved page",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/louislam/uptime-kuma",
+    "label": "Source",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/louislam/uptime-kuma/releases",
+    "label": "releases",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  },
+  {
+    "url": "https://github.com/louislam/uptime-kuma/security",
+    "label": "Policy/advisories",
+    "publisher_host": "github.com",
+    "accessed": "2026-10-29",
+    "publication_date": "undated living source; see digest for release-specific date",
+    "files": [
+      "digests/supplemental.md"
+    ]
+  }
+]

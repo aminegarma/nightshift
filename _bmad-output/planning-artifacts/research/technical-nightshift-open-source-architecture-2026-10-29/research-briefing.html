@@ -1,0 +1,1624 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Nightshift OSS architecture research</title>
+<style>:root{color-scheme:light dark;--bg:#f6f7f9;--fg:#182332;--panel:#fff;--line:#ccd4df;--accent:#075ca9}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}header{padding:2rem max(2rem,6vw);background:var(--panel);border-bottom:1px solid var(--line)}header p{margin:.25rem 0}main{max-width:1450px;margin:auto;padding:2rem}nav{display:flex;flex-wrap:wrap;gap:.4rem 1rem;padding:1rem;background:var(--panel);border:1px solid var(--line)}nav a{font-size:.85rem}a{color:var(--accent)}h1,h2,h3{line-height:1.25;scroll-margin-top:1rem}h2{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line)}table{border-collapse:collapse;width:100%;font-size:.88rem;display:block;overflow:auto;margin:1.2rem 0}td,th{border:1px solid var(--line);padding:.65rem;vertical-align:top;min-width:140px}th{background:var(--panel);text-align:left}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel);padding:1rem;border:1px solid var(--line);font-size:.8rem}code{overflow-wrap:anywhere}.badge{display:inline-block;padding:.25rem .65rem;border-radius:.3rem;background:#fff0cc;color:#623c00;font-weight:600;margin:.4rem .3rem .4rem 0}details{padding:1rem;border:1px solid var(--line)}@media(prefers-color-scheme:dark){:root{--bg:#111923;--fg:#e1e6ef;--panel:#1c2836;--line:#405166;--accent:#8ac8ff}}@media(max-width:700px){main{padding:1rem}header{padding:1.3rem}td,th{min-width:170px}}@media print{nav{display:none}body{background:white;color:black}main{padding:0}a{color:inherit}pre{font-size:8pt}}</style>
+<header><h1>Nightshift: open-source architecture research</h1><p>Technical selection · 29 October 2026 · full approved scope</p><p>Decision: choose practical MVP components and enterprise evaluation candidates.</p><span class="badge">Proposal for review</span><span class="badge">Primary-source facts: medium confidence</span><span class="badge">Sizing and 10k capacity: unverified estimates</span><p>Canonical source: research.md. Offline copy: no external scripts, fonts or rendering services. Mermaid source is preserved in the architecture section and architecture.mmd.</p></header><main><nav><a href="#executive-recommendation">Executive recommendation</a><a href="#1-requirements-and-evaluation-method">1. Requirements and evaluation method</a><a href="#2-comparison-matrix-observation-hardware-and-diagnosis">2. Comparison matrix: observation, hardware and diagnosis</a><a href="#3-comparison-matrix-execution-privacy-and-fleet">3. Comparison matrix: execution, privacy and fleet</a><a href="#4-what-nightshift-should-reuse-extend-and-build">4. What Nightshift should reuse, extend and build</a><a href="#5-proposed-architecture-and-trust-boundaries">5. Proposed architecture and trust boundaries</a><a href="#6-safety-disconnected-operation-and-external-observers">6. Safety, disconnected operation and external observers</a><a href="#7-omk-hardware-and-eks-capability-matrix">7. OMK hardware and EKS capability matrix</a><a href="#8-ai-privacy-and-customer-isolation">8. AI, privacy and customer isolation</a><a href="#9-resource-overhead-and-10000-cluster-economics">9. Resource overhead and 10,000-cluster economics</a><a href="#10-maintenance-security-and-maturity-assessment">10. Maintenance, security and maturity assessment</a><a href="#11-trade-offs-contrary-evidence-and-reversal-conditions">11. Trade-offs, contrary evidence and reversal conditions</a><a href="#12-prioritized-proof-of-concept-plan">12. Prioritized proof-of-concept plan</a><a href="#13-open-decisions-for-architecture-review-and-party-mode">13. Open decisions for architecture review and Party Mode</a><a href="#14-evidence-appendix-and-refresh-policy">14. Evidence appendix and refresh policy</a></nav><h1 id="nightshift-open-source-architecture-research">Nightshift: open-source architecture research</h1>
+<h2 id="executive-recommendation">Executive recommendation</h2>
+<p>Build Nightshift around <strong>local deterministic detection and a small, typed repair controller</strong>. Reuse existing telemetry, storage, policy evaluation and delivery systems. Keep AI investigation outside the execution trust boundary. Put fleet coordination above this local loop, so loss of Orvex connectivity removes central convenience rather than local safety.</p>
+<p>The proposed MVP stack is Prometheus and Alertmanager; node_exporter, kube-state-metrics and node-problem-detector where the platform permits; Fluent Bit and a local log store; SMART plus read-only Redfish/IPMI on OMK; an independent heartbeat checker and an off-cluster watchdog; controller-runtime with embedded OPA; authenticated approval adapters; existing Quornex identity; Flux for tested release distribution. Evaluate K8sGPT analyzers and a restricted HolmesGPT integration for explanations. Support hosted models through a service that constructs outbound requests using only explicitly allowed fields and local models through a separate in-cluster endpoint. The comparison below distinguishes reusable products from the Nightshift controls that still require development.</p>
+<p><strong>Enterprise scale should preserve these boundaries, not replace them with one central brain.</strong> Benchmark VictoriaMetrics for metrics economics, OCM for fleet inventory/placement, NATS JetStream for asynchronous sanitized events, and Temporal for long-running management workflows. Add these when the existing Quornex platform does not already solve the same need. Do not install a full workflow engine, search cluster, secrets server and GPU in every small cluster by default.</p>
+<p>Three findings drive the recommendation:</p>
+<ol>
+<li>Strong OSS building blocks exist, but their combination does not implement Nightshift's approval, privacy, repair-conflict or data-protection requirements automatically.</li>
+<li>Hardware diagnosis needs host, out-of-band management and external perspectives. Total power/network loss cannot be diagnosed or repaired reliably by software running only inside the failed cluster.</li>
+<li>Always-on telemetry and per-node agents can dominate fleet resource costs. AI should be invoked after deduplication and deterministic checks, with explicit request budgets.</li>
+</ol>
+<p><strong>Status:</strong> a production-oriented architecture proposal for review, not a production certification. No benchmark, security audit or 10,000-cluster deployment of this assembled design was performed. Product facts below are supported by primary sources; sizing, comparative fit and rollout thresholds are explicitly proposed estimates. Exact stable versions must be pinned at implementation freeze.</p>
+<p><strong>Navigate:</strong> <a href="#executive-recommendation">Executive recommendation</a> · <a href="#1-requirements-and-evaluation-method">Requirements and evaluation method</a> · <a href="#2-comparison-matrix-observation-hardware-and-diagnosis">Comparison matrix: observation, hardware and diagnosis</a> · <a href="#3-comparison-matrix-execution-privacy-and-fleet">Comparison matrix: execution, privacy and fleet</a> · <a href="#4-what-nightshift-should-reuse-extend-and-build">What Nightshift should reuse, extend and build</a> · <a href="#5-proposed-architecture-and-trust-boundaries">Proposed architecture and trust boundaries</a> · <a href="#6-safety-disconnected-operation-and-external-observers">Safety, disconnected operation and external observers</a> · <a href="#7-omk-hardware-and-eks-capability-matrix">OMK hardware and EKS capability matrix</a> · <a href="#8-ai-privacy-and-customer-isolation">AI, privacy and customer isolation</a> · <a href="#9-resource-overhead-and-10000-cluster-economics">Resource overhead and 10,000-cluster economics</a> · <a href="#10-maintenance-security-and-maturity-assessment">Maintenance, security and maturity assessment</a> · <a href="#11-trade-offs-contrary-evidence-and-reversal-conditions">Trade-offs, contrary evidence and reversal conditions</a> · <a href="#12-prioritized-proof-of-concept-plan">Prioritized proof-of-concept plan</a> · <a href="#13-open-decisions-for-architecture-review-and-party-mode">Open decisions for architecture review and Party Mode</a> · <a href="#14-evidence-appendix-and-refresh-policy">Evidence appendix and refresh policy</a></p>
+<h2 id="1-requirements-and-evaluation-method">1. Requirements and evaluation method</h2>
+<p>Read as project context: current PRD and PRD addendum, final brief and brief addendum, Danny's Q&amp;A, requirements checklist and earlier research/extraction notes. Current PRD decisions take precedence over older interpretations. Its unfinished sections are requirements still to settle, not permission to invent behavior.</p>
+<p>Hard gates: local operation during management disconnection; raw logs/secrets remain in the originating cluster; fixed tested repairs; read access independent from write authority; explicit customer/Orvex approval rules; no direct customer-data/database/backup mutation; provider-aware EKS operation; report uncertainty when evidence cannot distinguish causes.</p>
+<p>Selection priorities after these gates: safety/isolation 30%, operational maturity and maintenance 25%, fleet cost/resource burden 20%, integration and disconnected behavior 15%, portability and exit cost 10%. These are proposed review weights, not user-approved business priorities. The report uses qualitative comparisons rather than invented benchmark scores. A candidate with unverified hardware support or untested safety controls does not pass a production gate merely by scoring well elsewhere.</p>
+<p>Evidence labels:</p>
+<ul>
+<li><strong>Documented:</strong> maintainer documentation/repository supports the specific fact. Confidence medium unless independently reproduced. Repository license is not a review of every dependency, model weight or commercial edition.</li>
+<li><strong>Recommendation:</strong> engineering inference under Nightshift's constraints.</li>
+<li><strong>Estimate:</strong> planning arithmetic or initial benchmark envelope, not observed usage.</li>
+<li><strong>Unverified:</strong> no adequate source, test or current compatibility evidence obtained. No candidate receives a blanket “secure” or “10k proven” label.</li>
+</ul>
+<p>The search covered major viable categories and alternatives, not every OSS repository. Source and maintenance details are retained in <a href="digests/">evidence digests</a>. Project/vendor scale claims remain vendor claims. Official documentation and GitHub are not independent third-party validation; that limitation follows the requested source policy.</p>
+<h2 id="2-comparison-matrix-observation-hardware-and-diagnosis">2. Comparison matrix: observation, hardware and diagnosis</h2>
+<p>Licenses are upstream core licenses observed on 2026-10-29. <strong>MVP</strong> means a production pilot after the stated tests; a one-VM demonstration may use a smaller configuration.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Strong options and licenses</th>
+<th>Production/security/scaling limitations</th>
+<th>MVP recommendation</th>
+<th>Enterprise consideration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metrics storage/rules</td>
+<td><a href="https://github.com/prometheus/prometheus">Prometheus</a>, Apache-2.0; <a href="https://docs.victoriametrics.com/victoriametrics/">VictoriaMetrics OSS</a>, Apache-2.0</td>
+<td>Prometheus local TSDB is not replicated; bound series churn, retention and query use. VictoriaMetrics has separate Enterprise features; MetricsQL compatibility and resource savings need workload tests.</td>
+<td>Existing Prometheus; otherwise local Prometheus with bounded retention and local rules.</td>
+<td>Benchmark VictoriaMetrics single-node locally and its cluster edition for approved central aggregates; retain local evaluation. No automatic migration solely because fleet reaches 10k.</td>
+</tr>
+<tr>
+<td>Collection pipeline</td>
+<td><a href="https://github.com/fluent/fluent-bit">Fluent Bit</a>, Apache-2.0; <a href="https://github.com/open-telemetry/opentelemetry-collector">OTel Collector</a>, Apache-2.0; <a href="https://github.com/vectordotdev/vector">Vector</a>, MPL-2.0 core</td>
+<td>Filesystem queues consume disk and can overflow. OTel component stability varies; Vector has buffer minimums and experimental configurations. Host logs require sensitive mounts.</td>
+<td>Fluent Bit for node logs; OTel only when OTLP/tracing or existing deployment justifies it.</td>
+<td>Standardize one primary agent per signal; use minimal OTel distributions or Vector when transformations warrant it. Avoid duplicate collection.</td>
+</tr>
+<tr>
+<td>Local log backend</td>
+<td><a href="https://github.com/grafana/loki">Loki</a>, AGPL-3.0; <a href="https://github.com/opensearch-project/OpenSearch">OpenSearch</a>, Apache-2.0</td>
+<td>Loki needs explicit auth and label discipline; filesystem examples are not a production storage plan. OpenSearch adds JVM/index/replication operations. Both can store sensitive evidence.</td>
+<td>Reuse local backend; otherwise evaluate Loki for stream/time queries with supported local-boundary storage. A VM prototype can query bounded local files.</td>
+<td>OpenSearch only if indexed full-text needs justify cost; Loki with appropriate object storage/HA for larger customer clusters. No central raw-log lake under current privacy rule.</td>
+</tr>
+<tr>
+<td>Kubernetes/node state</td>
+<td><a href="https://github.com/prometheus/node_exporter">node_exporter</a>, <a href="https://github.com/kubernetes/kube-state-metrics">kube-state-metrics</a>, <a href="https://github.com/kubernetes/node-problem-detector">NPD</a>, all Apache-2.0</td>
+<td>Complementary host metrics, object state and node conditions; not interchangeable RCA engines. NPD writes conditions/events; exporter host access is privileged visibility.</td>
+<td>Reuse existing exporters; add missing signals and vetted NPD checks.</td>
+<td>Scope API watches/labels, test version support and reduce duplication with cloud-native node detection.</td>
+</tr>
+<tr>
+<td>Disk health</td>
+<td><a href="https://github.com/prometheus-community/smartctl_exporter">smartctl_exporter</a>, Apache-2.0; <a href="https://github.com/AnalogJ/scrutiny">Scrutiny</a>, MIT</td>
+<td>Device/RAID passthrough differs; SMART does not predict every failure. Scrutiny describes itself as work in progress and adds a database/UI. Both require device access.</td>
+<td>smartctl_exporter where actual disks are visible.</td>
+<td>Scrutiny for specialist local history if validated; keep one source of disk metrics. No SMART promise for virtual EKS disks.</td>
+</tr>
+<tr>
+<td>BMC telemetry</td>
+<td><a href="https://github.com/prometheus-community/ipmi_exporter">ipmi_exporter</a>, MIT; <a href="https://github.com/comcast/fishymetrics">fishymetrics</a>, Apache-2.0</td>
+<td>IPMI's FreeIPMI dependencies and Redfish vendor/firmware differences need testing. Protect target parameters, management networks and credentials; some exporters perform pre-actions.</td>
+<td>Prefer tested Redfish/fishymetrics for supported hardware; IPMI exporter fallback. Collect from a management segment using read-only accounts.</td>
+<td>Maintain a certified vendor/firmware capability matrix; a small typed Redfish adapter may be safer than extending an exporter with write operations.</td>
+</tr>
+<tr>
+<td>Independent watchdog</td>
+<td><a href="https://github.com/healthchecks/healthchecks">Healthchecks</a>, BSD-3-Clause; <a href="https://github.com/prometheus/blackbox_exporter">blackbox_exporter</a>, Apache-2.0; Uptime Kuma evaluated in supplemental digest</td>
+<td>Missed push heartbeat and failed active probe are different evidence. A probe depending on the same failed Prometheus cannot detect its evaluator's death.</td>
+<td>Healthchecks outside the cluster plus local independent API/freshness checker. Use blackbox probes for service reachability.</td>
+<td>Separate regional failure domains, independent alert transports and an external observer of the fleet watchdog itself.</td>
+</tr>
+<tr>
+<td>Prediction</td>
+<td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#predict_linear">Prometheus rules/functions</a>, Apache-2.0; <a href="https://github.com/online-ml/river">River</a>, BSD-3-Clause; <a href="https://github.com/yzhao062/pyod">PyOD</a>, BSD-2-Clause</td>
+<td>Linear gauge forecasts are not general failure prediction. Libraries lack Nightshift's labels, feature pipeline, calibration and action policy.</td>
+<td>Thresholds, sustained trends, freshness and time-to-exhaustion estimates with uncertainty.</td>
+<td>River online models or PyOD offline comparisons in shadow mode, promoted only after time-ordered evaluation improves incident outcomes.</td>
+</tr>
+<tr>
+<td>AI investigation/RCA</td>
+<td><a href="https://github.com/HolmesGPT/holmesgpt">HolmesGPT</a>, <a href="https://github.com/k8sgpt-ai/k8sgpt">K8sGPT</a>, <a href="https://github.com/kagent-dev/kagent">kagent</a>, Apache-2.0</td>
+<td>Broad tools and default configurations can exceed Nightshift's permissions. No retrieved result establishes true causal accuracy or safe execution for this fleet. kagent is a larger agent platform.</td>
+<td>K8sGPT analyzer baseline; restricted HolmesGPT as a parallel PoC. Fixed evidence tools, no shell/remediation credentials.</td>
+<td>Adopt whichever beats deterministic baseline on representative cases; extend adapters upstream rather than maintain a broad fork. Defer kagent unless its lifecycle platform is independently needed.</td>
+</tr>
+<tr>
+<td>Traces/application visibility</td>
+<td><a href="https://github.com/jaegertracing/jaeger">Jaeger</a>, Apache-2.0; <a href="https://github.com/grafana/tempo">Tempo</a>, AGPL-3.0</td>
+<td>Opt-in instrumentation, sampling, local storage and sensitive attributes must be designed. Request bodies and trace names can reveal customer data.</td>
+<td>Existing OTel instrumentation/backend only; do not mandate tracing for every cluster.</td>
+<td>Compare local Jaeger/Tempo on actual traces; eBPF application capture such as Pixie is a separate consent/privilege evaluation.</td>
+</tr>
+</tbody>
+</table>
+<p>Metrics persistence and queue semantics are documented in <a href="https://prometheus.io/docs/prometheus/latest/storage/">Prometheus storage</a>, <a href="https://opentelemetry.io/docs/collector/resiliency/">OTel resilience</a>, <a href="https://docs.fluentbit.io/manual/data-pipeline/buffering.md">Fluent Bit buffering</a> and <a href="https://vector.dev/docs/architecture/buffering-model/">Vector buffering</a>. Loki needs an <a href="https://grafana.com/docs/loki/latest/operations/authentication/">authentication layer</a>; OpenSearch production setup must replace demo credentials/certificates and plan replicas/snapshots, as its <a href="https://docs.opensearch.org/latest/install-and-configure/install-opensearch/index/">installation guide</a> explains.</p>
+<h3 id="broader-monitoring-alternatives-screened">Broader monitoring alternatives screened</h3>
+<p><strong>Zabbix</strong> is a credible integrated infrastructure/network monitoring alternative, AGPLv3 from version 7.0, with an explicit <a href="https://www.zabbix.com/life_cycle_and_release_policy">LTS lifecycle</a> and <a href="https://www.zabbix.com/license">license policy</a>. Its <a href="https://www.zabbix.com/documentation/current/en/manual/distributed_monitoring/proxies">proxy documentation</a> documents buffered collection during unreliable communications, including SNMP/IPMI, but proxies do not evaluate triggers or send alerts. A central-server/proxy topology therefore fails Nightshift's local-decision requirement by itself. Reuse Zabbix as an evidence source if already deployed; a local server is an alternative only after budgeting its database and operations. Keep remote commands outside AI authority.</p>
+<p><strong>Netdata Agent</strong> is GPLv3+ and bundles collection, storage, ML and alerts. Its <a href="https://github.com/netdata/netdata">repository</a> distinguishes the OSS agent from closed-source UI/Cloud components. The <a href="https://github.com/netdata/netdata/releases">v2.12.0 release notes</a> describe a new Redfish collector and early-access traces; these features are not long-established production evidence. It is a useful consolidation challenger for a lab benchmark against the exporter stack. Do not assume its dashboards/cloud are fully OSS or disconnected, or treat its anomaly scores as calibrated failures. Its actual comparative footprint and new hardware coverage remain unverified.</p>
+<h2 id="3-comparison-matrix-execution-privacy-and-fleet">3. Comparison matrix: execution, privacy and fleet</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Alternatives and licenses</th>
+<th>Limitations / integration work</th>
+<th>MVP recommendation</th>
+<th>Enterprise consideration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Repair workflow</td>
+<td><a href="https://github.com/kubernetes-sigs/controller-runtime">controller-runtime</a>, Apache-2.0; <a href="https://github.com/argoproj/argo-workflows">Argo Workflows</a>, Apache-2.0; <a href="https://github.com/temporalio/temporal">Temporal</a>, MIT; <a href="https://github.com/StackStorm/st2">StackStorm</a>, Apache-2.0</td>
+<td>Controller is a library, not a complete safe-repair product. Argo needs template and parameter lockdown. Temporal needs durable services/datastore; StackStorm has a substantial dependency footprint.</td>
+<td>Small controller owning typed repair resources and fixed compiled handlers. Argo is viable if already operated locally and locked down.</td>
+<td>Temporal for long management workflows, or Argo for substantial local DAGs; local authorization still gates every mutation. StackStorm mainly if already the operations standard.</td>
+</tr>
+<tr>
+<td>Node recovery/fencing</td>
+<td><a href="https://github.com/medik8s/node-healthcheck-operator">Medik8s NHC</a> + <a href="https://github.com/medik8s/self-node-remediation">SNR</a>, Apache-2.0; provider-native repair; typed Redfish recovery</td>
+<td>Partition handling, safe-state timeouts, minimum topology and privileged access are release-specific. Reboot is not application/data recovery.</td>
+<td>Detection and escalation first; only catalogue-approved mitigation. Do not enable generic automatic fencing by default.</td>
+<td>NHC/SNR or fence-agent integration after storage/fencing tests; provider-owned pools delegate node repair.</td>
+</tr>
+<tr>
+<td>Policy evaluation</td>
+<td><a href="https://github.com/open-policy-agent/opa">OPA</a>, Apache-2.0; <a href="https://github.com/cedar-policy/cedar">Cedar</a>, Apache-2.0</td>
+<td>Neither supplies durable approvals, truthful evidence or execution locking. Standalone OPA authentication is off by default.</td>
+<td>Embed OPA in Go executor, default deny; test every catalogue action.</td>
+<td>Cedar wins if entity-oriented authorization and existing team expertise dominate. Preserve a policy interface and conformance tests.</td>
+</tr>
+<tr>
+<td>Human approvals</td>
+<td>Typed Nightshift approval service using existing IdP; Argo suspend/resume; Temporal signal-based workflow</td>
+<td>Suspend/resume and signals provide mechanisms, not customer delegation, exact-action binding or protection from replay. A timed resume is not consent.</td>
+<td>Develop exact approval semantics; portal first, signed Slack requests through an adapter.</td>
+<td>Workflow engine may host the wait; same local verifier, expiry and revalidation contract.</td>
+</tr>
+<tr>
+<td>Privacy minimization</td>
+<td><a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/redactionprocessor">OTel redaction</a>, Apache-2.0; <a href="https://github.com/data-privacy-stack/presidio">Presidio</a>, MIT</td>
+<td>Attribute filtering/PII detection does not guarantee confidential business context is removed. Redaction stability differs by signal.</td>
+<td>Develop positive-schema fact builder and deny-by-default egress; optional redaction as another layer.</td>
+<td>Domain-specific recognizers and privacy regression corpus; retain identical boundaries for fleet dashboards and inference.</td>
+</tr>
+<tr>
+<td>Hosted provider access</td>
+<td>Direct provider adapters; <a href="https://github.com/BerriAI/litellm">LiteLLM OSS</a>, MIT outside separate enterprise code</td>
+<td>Direct adapters require retries/quotas/compatibility work. LiteLLM adds keys, routing, logging and upgrades; some identity/audit controls are Enterprise.</td>
+<td>Small adapter interface, fixed supported providers, request/token budget.</td>
+<td>LiteLLM OSS if provider routing/quotas justify it; do not depend on commercial features accidentally.</td>
+</tr>
+<tr>
+<td>Local inference</td>
+<td><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a>, MIT; <a href="https://github.com/vllm-project/vllm">vLLM</a>, Apache-2.0; <a href="https://github.com/ollama/ollama">Ollama</a>, MIT</td>
+<td>Runtime licence differs from model-weight licence. Context/concurrency consume KV memory. Local API and distributed runtime need security controls.</td>
+<td>Benchmark llama.cpp or Ollama with approved quantized model; hosted sanitized mode remains a separate option.</td>
+<td>vLLM for sufficiently utilized in-cluster accelerators and concurrency; no cross-cluster private inference until privacy policy permits it.</td>
+</tr>
+<tr>
+<td>Release delivery</td>
+<td><a href="https://github.com/fluxcd/flux2">Flux</a>, Apache-2.0; <a href="https://github.com/argoproj/argo-cd">Argo CD</a>, Apache-2.0</td>
+<td>GitOps can undo emergency changes if ownership overlaps. Repo/registry access and cold restarts fail during outages unless artifacts are cached.</td>
+<td>Reuse existing GitOps; otherwise per-cluster Flux with digest-pinned signed OCI releases.</td>
+<td>Shard release channels/cohorts; Argo CD where already standardized, with explicit HA/sharding.</td>
+</tr>
+<tr>
+<td>Fleet inventory/placement</td>
+<td><a href="https://github.com/open-cluster-management-io/ocm">OCM</a>, Apache-2.0; Flux plus Nightshift metadata API; Argo CD cluster inventory</td>
+<td>OCM adds klusterlet/controllers and powerful work APIs; inventory alone does not provide safety or privacy. No reproduced 10k result here.</td>
+<td>Existing Quornex inventory and a minimal status API; Flux for delivery.</td>
+<td>OCM if placement/governance gaps justify it; cluster-local agents continue independently. Avoid duplicate fleet control planes.</td>
+</tr>
+<tr>
+<td>Event transport</td>
+<td>HTTPS plus durable outbox; <a href="https://github.com/nats-io/nats-server">NATS JetStream</a>, Apache-2.0</td>
+<td>HTTPS requires custom retry/outbox. JetStream needs capacity/retention/account operations; message redelivery never means actions execute exactly once.</td>
+<td>Batched outbound HTTPS and bounded local outbox.</td>
+<td>NATS accounts, subject ACLs and isolated leaf domains for approved events; never bridge raw telemetry subjects.</td>
+</tr>
+<tr>
+<td>Incident/action state</td>
+<td>Kubernetes CRDs/status; <a href="https://www.sqlite.org/copyright.html">SQLite</a>, public domain; <a href="https://www.postgresql.org/about/licence/">PostgreSQL</a>, PostgreSQL licence</td>
+<td>CRDs share API/etcd failure domain; don't store raw logs there. SQLite is a single-node persistence option, not replica-safe shared storage. Postgres needs backup/HA work.</td>
+<td>CRD state for Kubernetes controller; SQLite only for a single-instance VM PoC or independent local outbox. Existing Postgres centrally.</td>
+<td>Tenant-sharded Postgres, tested RLS and archive lifecycle; dedicated DB/instance for customers needing stronger isolation.</td>
+</tr>
+<tr>
+<td>Human identity</td>
+<td><a href="https://github.com/keycloak/keycloak">Keycloak</a> and <a href="https://github.com/dexidp/dex">Dex</a>, Apache-2.0</td>
+<td>Authentication does not establish repair approval/delegation. Central identity refresh can break offline approval workflows.</td>
+<td>Reuse Quornex IdP; develop approval authorization separately.</td>
+<td>Keycloak for full IAM; Dex for federation.</td>
+</tr>
+<tr>
+<td>Workload identity/PKI</td>
+<td><a href="https://github.com/spiffe/spire">SPIRE</a> and <a href="https://github.com/cert-manager/cert-manager">cert-manager</a>, Apache-2.0</td>
+<td>Attested workload identity versus certificate management: distinct approaches, not interchangeable products. Test trust/expiry during disconnection.</td>
+<td>Existing PKI and scoped service accounts; cert-manager if already present.</td>
+<td>SPIRE when workload attestation and federation justify its control plane/agents.</td>
+</tr>
+<tr>
+<td>Secret storage/delivery</td>
+<td><a href="https://github.com/openbao/openbao">OpenBao</a> and <a href="https://github.com/getsops/sops">SOPS</a>, MPL-2.0</td>
+<td>Online secrets service versus encrypted configuration files; different rotation/availability trade-offs. Neither guarantees offline credential continuity.</td>
+<td>Encrypted Kubernetes Secrets; SOPS if Git carries secrets.</td>
+<td>OpenBao when dynamic secrets/rotation warrant the service; retain local outage plan.</td>
+</tr>
+<tr>
+<td>Notification/escalation</td>
+<td><a href="https://github.com/prometheus/alertmanager">Alertmanager</a>, Apache-2.0; <a href="https://github.com/binwiederhier/ntfy">ntfy</a>, dual Apache-2.0/GPLv2; <a href="https://github.com/gotify/server">Gotify</a>, MIT</td>
+<td>Alertmanager groups/routes alerts; ntfy/Gotify supply push transports. Push is not guaranteed voice escalation; receipt is not approval.</td>
+<td>Alertmanager + portal/Slack adapters; existing transports first.</td>
+<td>Delivery receipts, escalation scheduling and independent phone transport; measure carrier/delivery costs.</td>
+</tr>
+<tr>
+<td>Dashboard/customer views</td>
+<td><a href="https://github.com/grafana/grafana">Grafana</a>, AGPL-3.0 core; native Quornex portal using backend APIs</td>
+<td>Grafana plugins/editions have separate terms. Native portal work costs development time. Neither is the local rule evaluator.</td>
+<td>Existing Grafana for engineers; develop plain-language portal views.</td>
+<td>Tenant-scoped queries, dashboard performance tests and customer evidence permissions.</td>
+</tr>
+</tbody>
+</table>
+<p>For Argo, use <a href="https://argo-workflows.readthedocs.io/en/latest/workflow-restrictions/">restricted template execution</a> and treat <a href="https://argo-workflows.readthedocs.io/en/latest/walk-through/suspending/">suspension</a> as a wait primitive only. OPA's <a href="https://www.openpolicyagent.org/docs/security">security documentation</a> requires deliberate endpoint protection if it is deployed as a server. <a href="https://docs.cedarpolicy.com/auth/authorization.html">Cedar authorization</a> provides default-deny and forbid precedence. These primitives help implement policy; Nightshift must still enforce it at the executor.</p>
+<p>Also screen <a href="https://github.com/rancher/fleet">Rancher Fleet</a>, Apache-2.0, if Orvex already uses Rancher. Its <a href="https://fleet.rancher.io/">documentation</a> describes GitOps/Helm-based distributed deployment and its upstream <a href="https://github.com/rancher/fleet/releases">release stream</a> shows maintained artifacts. It is a viable delivery alternative to Flux/Argo CD, not Nightshift's repair policy or an automatic 10k-capacity proof. Reuse an existing Fleet installation; adding Rancher solely for Nightshift is not justified by this research.</p>
+<h2 id="4-what-nightshift-should-reuse-extend-and-build">4. What Nightshift should reuse, extend and build</h2>
+<table>
+<thead>
+<tr>
+<th>Reuse</th>
+<th>Extend through narrow integrations</th>
+<th>Develop as Nightshift product logic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Telemetry agents, metrics/rules, supported log/trace storage, SMART/BMC protocols, IdP/PKI, policy engine, GitOps and notification transports</td>
+<td>Platform capability discovery; OMK/EKS signal adapters; fixed-query evidence adapters; curated analyzers; catalogue-specific exporter mappings; approved fleet status schema</td>
+<td>Incident/repair catalogue and evidence contracts; incident correlation; risk/approval/delegation semantics; exact-action authorization; execution conflict control; verification/stop rules; outbound fact builder; customer explanations and audit timeline; sanitized learning/release pipeline</td>
+</tr>
+</tbody>
+</table>
+<p>The catalogue is a safety product, not merely a prompt collection. Each entry needs signal/version applicability, sufficient evidence, uncertainties, target type, allowed parameters, prohibited targets, risk, permissions, preconditions, timeout, concurrency scope, idempotency strategy, verification and compensation or escalation. Some supported problems have no executable repair, such as a physical disk replacement.</p>
+<p>Use topology and deterministic relationships first for correlation: owner references, affected nodes, service dependencies, change timestamps and symptom timelines. Maintain hypotheses separately from observed facts. “Correlated with a rollout” is weaker than a demonstrated cause. The AI can explain evidence and suggest a catalogue identifier; it cannot invent an executor operation.</p>
+<h2 id="5-proposed-architecture-and-trust-boundaries">5. Proposed architecture and trust boundaries</h2>
+<pre><code class="language-mermaid">flowchart TB
+  subgraph OMK[Customer OMK management network]
+    BMC[BMC Redfish or IPMI - read-only telemetry]
+  end
+  subgraph WC[One customer workload cluster - raw evidence stays here]
+    HOST[Node metrics, kernel logs, SMART, NPD]
+    KAPI[Kubernetes API and opted-in application signals]
+    COL[Existing agents or Fluent Bit and optional OTel]
+    STORE[Local Prometheus, logs, optional traces]
+    RULE[Rules, trend checks and incident correlation]
+    EV[Fixed-query evidence service]
+    AI[Restricted investigation adapter]
+    LOCAL[Optional local inference]
+    FACT[Positive-schema fact builder and egress verifier]
+    PROPOSE[Typed catalogue repair request]
+    AUTH[Local approval verifier and embedded OPA]
+    EXEC[Scoped executor, locks and precondition checks]
+    VERIFY[Health verification, stop or compensation]
+    STATE[Durable action state, audit and bounded outbox]
+    CHECK[Independent heartbeat and freshness checker]
+    HB[Independent bounded heartbeat schema validator]
+    FLUX[Local Flux and cached tested release]
+  end
+  subgraph CC[Optional customer control cluster]
+    MGMT[Coordination and sanitized customer dashboard]
+  end
+  subgraph ORVEX[Orvex fleet - tenant-isolated services]
+    API[Fleet status and authenticated approval relay]
+    DB[Sanitized metadata and approval records]
+    RELEASE[Reviewed signed catalogue and release registry]
+  end
+  WATCH[External watchdog in separate power and network domain]
+  PERSON[Customer or delegated support and Orvex approver]
+  HOSTED[Trusted hosted inference - sanitized facts only]
+  BMC --&gt; COL
+  HOST --&gt; COL
+  KAPI --&gt; COL
+  COL --&gt; STORE --&gt; RULE
+  STORE --&gt; EV --&gt; AI
+  AI --&gt; LOCAL --&gt; AI
+  EV --&gt; FACT --&gt; HOSTED
+  HOSTED --&gt; AI
+  RULE --&gt; PROPOSE
+  AI -. catalogue suggestion only .-&gt; PROPOSE
+  PROPOSE --&gt; AUTH --&gt; EXEC --&gt; VERIFY
+  EXEC --&gt; KAPI
+  VERIFY --&gt; STATE
+  AUTH --&gt; STATE
+  CHECK --&gt; STATE
+  CHECK --&gt; HB --&gt; WATCH
+  STATE --&gt; FACT
+  FACT --&gt; MGMT --&gt; API --&gt; DB
+  FACT --&gt; API
+  PERSON --&gt; API
+  API -. signed approval or stop instruction .-&gt; AUTH
+  RELEASE --&gt; FLUX
+  FLUX -. tested software and catalogue delivery .-&gt; RULE
+  FLUX -. tested executor release .-&gt; EXEC
+  WATCH --&gt; PERSON
+</code></pre>
+<p>Arrows describe logical interfaces, not permission to send arbitrary data. Hosted requests contain only validated facts; responses are untrusted suggestions. The independent heartbeat path has its own tiny schema validator so it can survive failure of the main evidence/egress service: opaque ID, timestamp and fixed health codes only, with no arbitrary strings. The direct cluster-to-fleet status path supports customers without a control cluster. Management coordination does not widen the diagnostic-data boundary. Release distribution changes catalogue/software state through controlled rollout, not an individual live repair request. Details such as exact CRD names and transport endpoints remain design proposals.</p>
+<h3 id="data-flows">Data flows</h3>
+<ol>
+<li><strong>Observe locally:</strong> collectors ingest approved sources. Record signal timestamp, collector health, permissions and visibility gaps. Raw logs, event text, object details, trace attributes and pseudonym mappings stay local, including backups and debug logs.</li>
+<li><strong>Detect and correlate:</strong> local rules group related symptoms into a case. Forecasts report uncertainty and data freshness. Loss of telemetry opens a monitoring failure case instead of reporting the cluster healthy.</li>
+<li><strong>Investigate:</strong> fixed query IDs retrieve bounded evidence. Local models may inspect richer approved evidence. Hosted adapters receive typed failure codes, numeric summaries, windows, opaque references and evidence IDs. No raw strings are assumed safe merely because a secret detector finds nothing.</li>
+<li><strong>Authorize:</strong> select a tested catalogue action. Locally verify customer permission, current delegation, required Orvex approval, exact target, catalogue revision, evidence digest, expiry and policy version. Approval absence or validation failure blocks execution.</li>
+<li><strong>Execute and verify:</strong> acquire conflict lock; re-read live state; enforce budgets and preconditions; use idempotent handlers so retries do not repeat the action’s effects; check service outcomes, not just API success. On uncertainty, record partial state and stop. Compensation is a separately tested action, not an assumption that every action can be undone.</li>
+<li><strong>Publish sanitized state:</strong> bounded outbox sends allowlisted case summaries, action results and costs to authorized customer/fleet services. Retries preserve tenant identity; sequence numbers and deduplication handle reconnects.</li>
+<li><strong>Learn and release:</strong> local cases yield reviewed sanitized patterns. Engineers update rules/catalogues, replay regression cases, sign a new release and roll out by cohort. No automatic online promotion of model-written repairs.</li>
+</ol>
+<h2 id="6-safety-disconnected-operation-and-external-observers">6. Safety, disconnected operation and external observers</h2>
+<h3 id="safe-execution-contract">Safe execution contract</h3>
+<p>Use typed operations such as <code>RestartReplica</code> with target UID and bounded parameters; never an arbitrary command, patch, URL or SQL field. Separate read-only evidence identities from mutation identities. Action-specific Kubernetes permissions and small privileged helpers narrow blast radius; removing a shell button does not make broad <code>patch</code> or <code>exec</code> credentials safe.</p>
+<p>Bind approval to customer, cluster, target UID/provider instance ID, action/catalogue digest, canonical parameters, evidence digest and expiration. Store approval provenance and verify identity server-side. Slack signing validates message origin, not a user's authority by itself. Recheck health, target identity and permission immediately before execution; prior approval does not make stale evidence true.</p>
+<p>Serialize overlapping repairs by target/service/node and enforce customer-wide budgets where coordination is available. A Kubernetes Lease alone is not fencing: a paused old executor may resume after losing its lease. Use optimistic concurrency on an execution record, fencing tokens where the target supports them, pre-mutation checks and explicit ambiguous-result reconciliation. If exclusivity cannot be demonstrated, do not execute a disruptive operation.</p>
+<p>Define repair ownership with GitOps, autoscalers, operators and EKS before enabling actions. Prefer owner-aware APIs or temporary, bounded overrides instead of controllers fighting over replicas or configuration. Cordon/drain, reboot and node replacement can affect stateful services even without direct database writes; stateful/local-storage targets need tested application constraints and fencing, or escalation.</p>
+<h3 id="failure-behavior">Failure behavior</h3>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Local behavior</th>
+<th>External behavior / limitation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Orvex/control-cluster link unavailable</td>
+<td>Continue local observation and still-valid pre-authorized actions; queue sanitized status. Block new approvals requiring unreachable people/services.</td>
+<td>Watchdog reports loss of contact with uncertainty. No new permission inferred from disconnection.</td>
+</tr>
+<tr>
+<td>Hosted model unavailable</td>
+<td>Deterministic detection and authorized catalogue loop continue; known explanations use templates.</td>
+<td>Report AI investigation unavailable; optional local model only if preconfigured.</td>
+</tr>
+<tr>
+<td>Prometheus stopped or stale</td>
+<td>Independent checker tests agent timestamps and API/node reachability without querying Prometheus as its sole dependency.</td>
+<td>Separate heartbeat path alerts on monitor failure.</td>
+</tr>
+<tr>
+<td>Kubernetes API/quorum unavailable</td>
+<td>Existing host collectors can record local signals. Cluster controller cannot assume it can lock, authorize or repair via API.</td>
+<td>External observer/BMC gathers evidence. Default to observe/escalate; separate host recovery is a narrowly tested additional subsystem.</td>
+</tr>
+<tr>
+<td>Whole cluster/site power or network loss</td>
+<td>In-cluster components cannot operate.</td>
+<td>Off-site observer detects silence; separately powered OOB channel may distinguish causes. No software guarantee of recovery without powered/reachable hardware.</td>
+</tr>
+<tr>
+<td>Audit store full/corrupt or action result ambiguous</td>
+<td>Fail closed for mutation; keep minimal bounded health reporting on a reserved path. Reconcile partial action before retry.</td>
+<td>Escalate monitoring degradation; never delete customer data to make audit space.</td>
+</tr>
+<tr>
+<td>Authorization expiry during outage</td>
+<td>Stop starting affected repairs; retain immutable record of valid completed work.</td>
+<td>Offline revocation cannot be instantaneous. Explicit bounded permission lifetime trades autonomy against stale authorization.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Proposed test durations, not settled NFRs:</strong> 24-hour management disconnection first, then seven days; independent heartbeat every 60 seconds with a three-miss threshold plus jitter tolerance. Maintain preprovisioned images, model weights, policies, trust roots, local DNS/time behavior and credentials for the chosen duration. Cold restart and expiry must be tested, not just an already-running cluster. These values require PRD agreement later.</p>
+<p>The same-cluster independent checker meets independence from the metrics pipeline, but cannot survive cluster destruction. Healthchecks outside that failure domain detects missed pings; blackbox probes offer a second viewpoint. No single absent heartbeat establishes “power supply failed.” Redundant management power, UPS and independent network routes are hardware/site prerequisites, not capabilities created by an exporter.</p>
+<h2 id="7-omk-hardware-and-eks-capability-matrix">7. OMK hardware and EKS capability matrix</h2>
+<p>Redfish is a <a href="https://www.dmtf.org/standards/redfish">DMTF management standard</a>, not a guarantee of identical fields or permissions across BMC firmware. Inventory actual server models, SMART access, ECC/RAS reporting, NIC counters, firmware, management-network routes and customer-granted credentials during installation. Poll BMCs gently with timeouts/jitter; expose missing or unsupported data explicitly. Never share power-control credentials with telemetry collectors. Audit exporter code for state-changing pre-scrape actions.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>OMK bare metal</th>
+<th>EKS on EC2-backed nodes</th>
+<th>EKS Fargate / managed control plane</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Physical disks, PSU, fans, ECC</td>
+<td>Conditional SMART/BMC/OS visibility; hardware-specific</td>
+<td>Provider-side physical sensors generally unavailable; use exposed instance/storage evidence</td>
+<td>No host/BMC visibility</td>
+</tr>
+<tr>
+<td>OS/kernel/runtime</td>
+<td>Host agents/NPD with scoped privileged access</td>
+<td>Depends on node OS, permissions and compute mode</td>
+<td>Fargate lacks DaemonSets/privileged host access</td>
+</tr>
+<tr>
+<td>Kubernetes objects/app</td>
+<td>Cluster APIs and explicit app opt-in</td>
+<td>Cluster APIs and app opt-in</td>
+<td>Cluster APIs/app instrumentation where supported</td>
+</tr>
+<tr>
+<td>Control-plane internals</td>
+<td>What OMK exposes and permits</td>
+<td>Managed control-plane internals remain provider-owned</td>
+<td>Same provider boundary</td>
+</tr>
+<tr>
+<td>Automatic node repair</td>
+<td>Nightshift/approved existing remediator with fencing tests</td>
+<td>Choose one owner; EKS mode and pool settings matter</td>
+<td>Auto Mode behavior provider-managed; Fargate not covered by node monitoring agent</td>
+</tr>
+<tr>
+<td>Control-plane logs</td>
+<td>Local collection if configured</td>
+<td>AWS CloudWatch export, disabled by default and charged</td>
+<td>Provider service path; not a local host log feed</td>
+</tr>
+</tbody>
+</table>
+<p>AWS documents <a href="https://docs.aws.amazon.com/eks/latest/userguide/fargate.html">Fargate restrictions</a>, <a href="https://docs.aws.amazon.com/eks/latest/userguide/node-health.html">node health behavior</a>, <a href="https://docs.aws.amazon.com/eks/latest/userguide/node-repair.html">repair settings</a> and <a href="https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html">control-plane logging</a>. Its repair does not handle standard disk/memory pressure by default. Auto Mode repair is always enabled and nonconfigurable according to the repair guide. Nightshift must consume this behavior rather than run competing reboot/replacement policies.</p>
+<p>CloudWatch creates a requirement question: if “raw logs stay inside the cluster” is literal, exported provider control-plane logs cannot be treated as compliant merely because they stay in the customer's AWS account. Until clarified, mark this path unavailable or subject to an explicitly approved boundary exception. Do not silently weaken privacy to obtain broader EKS visibility.</p>
+<h2 id="8-ai-privacy-and-customer-isolation">8. AI, privacy and customer isolation</h2>
+<p>HolmesGPT's current <a href="https://holmesgpt.dev/latest/data-sources/builtin-toolsets/bash/">Bash toolset documentation</a> says it is enabled by default. Disable Bash, arbitrary command/MCP discovery and remediation toolsets, and supply only fixed bounded evidence operations. K8sGPT analyzers offer a useful baseline, but analyzer findings still need privacy filtering and validation. Neither tool's name or “read-only” description proves its entire tool surface meets this design.</p>
+<p>The <strong>egress fact builder is a security boundary</strong>. Allow fixed enumerations and bounded numeric fields; reject unexpected keys and free text. Even identifiers, topology, precise timestamps and aggregates may be sensitive, so approve the schema with customers. A hash/pseudonym is not automatic anonymization. Separate facts for inference, dashboards, support and fleet learning may need different policies.</p>
+<p>Presidio's <a href="https://presidio.dataprivacystack.org/faq/">FAQ</a> disclaims complete sensitive-data detection. The OTel redaction processor has per-signal stability limits. Use both only as additional controls; positive schema construction plus network-enforced egress is the primary design. Inspect outbound retries, queues, error reporting, prompt traces and debug callbacks. Fail closed on schema/policy failures. Sanitizing exported text also does not solve prompt injection in local evidence: treat all logs/tool results and model outputs as untrusted, and keep authority outside the model.</p>
+<p>Hosted and local modes use the same evaluation cases and action constraints. Local inference requires approved model weights, local endpoint selection, authenticated APIs, protected caches and no cloud fallback. <a href="https://docs.ollama.com/faq">Ollama's FAQ</a> documents <code>OLLAMA_NO_CLOUD=1</code>; enforce network policy as well. <a href="https://docs.vllm.ai/en/latest/usage/security/">vLLM security guidance</a> describes distributed-runtime and tenant-boundary concerns. Its API-key mechanism alone does not protect all exposed endpoints: use an authenticated gateway with an explicit route allowlist and restrict network access. A shared inference process is not a strong customer isolation boundary. Sharing private inference across even one customer's clusters remains an unresolved project privacy decision.</p>
+<p>Central isolation proposal: derive customer/cluster identity from authenticated certificates or tokens, not a request field. Authorize every resource and query. Separate NATS accounts/ACLs if used; per-tenant quotas and queues; Postgres RLS under non-owner/non-superuser application roles; separate encryption keys and dedicated deployments for stronger customer requirements. <a href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">Postgres RLS</a> has owner/privileged-role bypass caveats. <a href="https://docs.nats.io/learn/security/accounts-and-multitenancy">NATS accounts</a> provide a messaging boundary, but neither replaces application authorization. Test cross-tenant reads, writes, subscriptions, approval replay and inference-cache access.</p>
+<p>Experimental code fixes belong in an isolated build/test workflow: opt-in repository access, proposed patch/PR, sandboxed tests and explicit engineer review. Do not give the local repair executor repository-wide deployment or customer database credentials. Generated code tests are evidence for review, not authority to deploy.</p>
+<h2 id="9-resource-overhead-and-10000-cluster-economics">9. Resource overhead and 10,000-cluster economics</h2>
+<p>All ranges below are <strong>initial benchmark envelopes</strong>. They are not official minimums, product comparisons measured here or guaranteed Kubernetes requests/limits. Assume a small three-node cluster, around 100,000 active metric series, 30-second scrape interval, moderate query load and 1 GB/day raw logs. Larger node counts, cardinality, query concurrency and incident storms can exceed these ranges substantially.</p>
+<table>
+<thead>
+<tr>
+<th>Component / placement</th>
+<th style="text-align:right">Initial CPU envelope</th>
+<th style="text-align:right">Initial RAM envelope</th>
+<th>Disk / scaling driver</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>node_exporter + NPD + log agent + optional SMART, per node combined</td>
+<td style="text-align:right">0.05–0.30 core</td>
+<td style="text-align:right">0.15–0.50 GiB</td>
+<td>Bounded log spool, initially 0.5–2 GiB; bursts can exceed this</td>
+</tr>
+<tr>
+<td>Prometheus, one local replica</td>
+<td style="text-align:right">0.2–1.0 core</td>
+<td style="text-align:right">0.5–2 GiB</td>
+<td>Samples, head/index/WAL, churn, retention and query range</td>
+</tr>
+<tr>
+<td>Alertmanager + kube-state-metrics + probes/checker, per cluster combined</td>
+<td style="text-align:right">0.05–0.25 core</td>
+<td style="text-align:right">0.15–0.50 GiB</td>
+<td>Object cardinality, probe frequency and alert count</td>
+</tr>
+<tr>
+<td>Custom controller + embedded policy + outbox</td>
+<td style="text-align:right">0.05–0.20 core</td>
+<td style="text-align:right">0.125–0.50 GiB</td>
+<td>Scoped caches, audit history and outage backlog</td>
+</tr>
+<tr>
+<td>Minimal Flux controllers, if newly needed</td>
+<td style="text-align:right">0.05–0.25 core</td>
+<td style="text-align:right">0.15–0.60 GiB</td>
+<td>Source sizes, reconciliation frequency and concurrent builds</td>
+</tr>
+<tr>
+<td>BMC exporter per cluster or management site</td>
+<td style="text-align:right">0.01–0.10 core</td>
+<td style="text-align:right">0.03–0.15 GiB</td>
+<td>Vendor latency and concurrent target sessions</td>
+</tr>
+<tr>
+<td>Local Loki/service storage, if newly needed</td>
+<td style="text-align:right">0.1–0.5 core</td>
+<td style="text-align:right">0.25–1 GiB</td>
+<td>Ingest/query/retention; object-store overhead additional</td>
+</tr>
+<tr>
+<td>Optional investigation worker</td>
+<td style="text-align:right">0.1–1 core during work</td>
+<td style="text-align:right">0.25–1 GiB</td>
+<td>Concurrent cases; scale to zero where feasible</td>
+</tr>
+<tr>
+<td>Optional local inference</td>
+<td style="text-align:right">Unspecified; benchmark CPU/GPU split</td>
+<td style="text-align:right">Model-dependent host RAM</td>
+<td>Weights + KV cache + runtime; VRAM and power measured separately</td>
+</tr>
+<tr>
+<td>Shared external watchdog + database</td>
+<td style="text-align:right">0.2–1 core initially</td>
+<td style="text-align:right">0.5–2 GiB initially</td>
+<td>Fleet heartbeat/query load; unverified 10k capacity</td>
+</tr>
+</tbody>
+</table>
+<p>Three-node <strong>base without AI, log backend or BMC exporter:</strong> roughly <strong>0.5–2.6 cores and 1.4–5.1 GiB</strong> summed across the cluster. This includes newly installed minimal Flux and one metrics replica. It excludes Kubernetes overhead, raw evidence storage, HA duplicates and existing platform services. At 10,000 identical clusters that is about <strong>5,000–26,000 cores and 14–51 thousand GiB</strong> of aggregate capacity. These are summed planning envelopes, not expected steady-state usage. Reusing existing telemetry/GitOps can cut incremental Nightshift cost substantially; measure incremental and total footprints separately.</p>
+<p>HA is an explicit extra cost: duplicate independent metric collectors/rule evaluators where required, spread controller replicas across nodes, and provide durable state/quorum. Three nodes alone do not guarantee independent power, disk or control-plane availability. A single Prometheus process and SQLite file is an acceptable prototype configuration, not the production-HA claim.</p>
+<h3 id="reproducible-capacity-arithmetic">Reproducible capacity arithmetic</h3>
+<p>Using Prometheus's <a href="https://prometheus.io/docs/prometheus/latest/storage/">rough storage formula</a>, 100,000 series / 30 seconds is about 3,333 samples/second. At 1–2 bytes/sample, seven days is approximately <strong>2–4 GB per cluster for samples alone</strong>. Across 10,000 clusters this is about 33.3 million samples/second and <strong>20–40 TB</strong> before index/head/WAL/compaction, replication and backups. Provisioning solely from compressed sample bytes would under-size the deployment.</p>
+<p>At the assumed 1 GB/day raw logs and seven-day retention, fleet-wide uncompressed retention is <strong>70 TB</strong>, before indexes or replication. At 10 GB/day it is <strong>700 TB</strong>. These bytes remain distributed locally under the privacy model; a cheap central store does not solve that requirement.</p>
+<p>An additional 256 MiB per cluster becomes about <strong>2.44 TiB fleet RAM</strong>; 0.1 core becomes <strong>1,000 cores</strong>. One 1 KiB sanitized heartbeat/minute/cluster is about <strong>14.7 GB/day fleet payload</strong> and 167 messages/second, excluding protocol overhead; byte-small does not mean the receiver/database scales without testing. Polling releases every minute yields 14.4 million fleet polls/day; cache, jitter and use bounded intervals.</p>
+<h3 id="cost-model-inputs-and-sensitivities">Cost model inputs and sensitivities</h3>
+<p>Use <code>cost_per_cluster = local_compute + storage + backups + allocated_shared_services + model_usage + notifications + operations</code>. Avoid double-counting shared platform costs, but show total capacity consumption as well as incremental bills.</p>
+<p><strong>Illustrative prices only, not vendor quotes:</strong> if allocated capacity costs $10/core-month and $2/GiB-month, the base envelope above represents roughly <strong>$8–36/cluster-month</strong>, before storage, redundancy, support and AI. That becomes $800–3,600/month at 100 clusters and $80,000–360,000/month at 10,000. Actual spare bare-metal capacity and incremental EKS node billing can give very different results. Replace these assumptions with the selected provider's rates and measured utilization before economic conclusions.</p>
+<p>Hosted AI formula: <code>(input_tokens × input_rate + output_tokens × output_rate) / 1,000,000 × calls</code>, plus retries/evaluation. Assuming a 30-day month, 250 fleet incidents/night and ten calls/incident yield 75,000 calls/month; 10,000 input and 2,000 output tokens per call means 750 million input and 150 million output tokens/month. This is scenario arithmetic, not validated incident demand or model pricing. One such call per cluster daily adds 300,000 calls per 30-day month; periodic AI polling can exceed incident-triggered usage.</p>
+<p>GPU purchase amortization: a hypothetical $1,000 card over 36 months is $27.78/month before server, power, cooling, maintenance and spare capacity. Ten thousand dedicated cards imply $10 million purchase and about $277,778/month purchase amortization alone. Danny's $1,000/24 GB and $10,000/96 GB examples are hypotheses, not verified purchase offers. Queue latency and diagnosis quality must be compared with sanitized hosted inference before claiming savings. No hosted prices or current GPU procurement quote were verified in this report.</p>
+<p>At 100 clusters, shared-service and engineering costs have a larger allocation per cluster. At 10k, local collectors, cardinality, retention, upgrade operations and support workload dominate sensitivities. Track human minutes/case and damaging versus harmless unsuccessful repairs separately; reducing model cost while increasing operator burden can make the product more expensive.</p>
+<h2 id="10-maintenance-security-and-maturity-assessment">10. Maintenance, security and maturity assessment</h2>
+<p>The evidence digests linked in §14 include release-page snapshots. Examples observed: Prometheus stable 3.15.1 on October 21, 2026; OPA 1.21.4 artifacts on October 23; HolmesGPT 0.45.0 on October 15; kagent 1.0.0-alpha17 on October 21; Presidio 2.2.366 security release on October 27. These demonstrate maintenance artifacts, not equivalent support or production suitability. Version-specific facts must be rechecked before pinning. Some projects' stable/prerelease branches and publication dates differ.</p>
+<p>Maturity judgment: Prometheus/exporters, Alertmanager, established log pipelines, PostgreSQL, Flux/Argo CD and OPA are the lowest-risk reuse candidates for their documented roles. Hardware exporters need device-specific qualification. AI investigation frameworks and learned detectors need task-specific evidence. A mature dependency cannot make a newly written executor production-mature by inheritance. The current research did not exhaustively audit maintainer concentration, support response time, transitive dependencies or all current security advisories.</p>
+<p>Before any production pilot, capture each selected image's exact release/commit/digest, license/NOTICE and SBOM, supported Kubernetes/OS/kernel versions, security advisories, signature provenance, privileges and resource profile. Review releases over time, not stars. Apply patches through replay and cohort tests. AGPL/MPL and runtime/model licensing need distribution-specific checks; this report identifies licenses without declaring the final combined distribution compliant.</p>
+<p>Security architecture should be testable: non-root/read-only filesystems where possible; separate privileged collectors; narrow Kubernetes roles; no arbitrary <code>exec</code>; signed releases; management network segregation; authenticated local endpoints; encrypted evidence volumes/backups; controlled query budgets; tenant-bound audit access. Reuse existing Falco or evaluate Tetragon for runtime detection if needed, rather than introducing another privileged agent by default. Their purpose is security telemetry/enforcement, not proof that Nightshift actions are safe.</p>
+<h2 id="11-trade-offs-contrary-evidence-and-reversal-conditions">11. Trade-offs, contrary evidence and reversal conditions</h2>
+<table>
+<thead>
+<tr>
+<th>Proposed choice</th>
+<th>Strongest argument against it</th>
+<th>Keep the decision reversible / switch when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Small custom controller</td>
+<td>Bespoke state machine and safety code are difficult to build and maintain.</td>
+<td>Typed action API and conformance suite; use restricted Argo if local DAG complexity exceeds what a small controller can safely own.</td>
+</tr>
+<tr>
+<td>Prometheus local baseline</td>
+<td>Per-cluster TSDB/rule memory, upgrade work and HA duplication may dominate cost.</td>
+<td>PromQL/query adapter and replay corpus; switch to VictoriaMetrics only after semantic, recovery and resource comparison.</td>
+</tr>
+<tr>
+<td>Loki candidate for local logs</td>
+<td>Auth/storage/retention operations and AGPL obligations can outweigh expected simplicity.</td>
+<td>Reuse existing backend first; bounded query interface; OpenSearch if its search benefits justify measured cost.</td>
+</tr>
+<tr>
+<td>Rules before learned prediction</td>
+<td>Fixed rules miss unknown and non-linear precursors.</td>
+<td>Keep labeled replay cases and shadow River/PyOD; promote only if measurable precision/lead-time improves.</td>
+</tr>
+<tr>
+<td>Restricted HolmesGPT</td>
+<td>Removing broad shell tools may remove much of the tool's diagnostic value.</td>
+<td>Compare against K8sGPT + deterministic templates; reject framework if adapter work exceeds demonstrated gains.</td>
+</tr>
+<tr>
+<td>Strict allowlisted hosted facts</td>
+<td>Privacy protection may remove context required for useful diagnosis.</td>
+<td>Measure accuracy on identical incidents; escalate to local investigation/humans when facts are insufficient, rather than leak richer data.</td>
+</tr>
+<tr>
+<td>Flux without new OCM initially</td>
+<td>Custom inventory/status code could recreate OCM badly.</td>
+<td>First inspect Quornex Fleet capabilities; adopt OCM when its actual gaps exceed the added controllers/agents and migration cost.</td>
+</tr>
+<tr>
+<td>Offline authorization lifetimes</td>
+<td>Short expiry loses autonomy; long expiry delays revocation during a partition.</td>
+<td>Make the trade explicit by action class and customer policy; never claim immediate revocation and unlimited offline autonomy simultaneously.</td>
+</tr>
+</tbody>
+</table>
+<p>These counterarguments arise from integration constraints and documented limitations; no independent adversarial production audit was performed. The later BMAD Party Mode should challenge them with product, operations, security and cost perspectives.</p>
+<h2 id="12-prioritized-proof-of-concept-plan">12. Prioritized proof-of-concept plan</h2>
+<p>The following is an ordered proposal, not authorization to run disruptive experiments on production. Use isolated disposable fixtures and non-customer data. Resource and latency thresholds remain to be agreed before testing.</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Experiment and deliverable</th>
+<th>Exit evidence / failure decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0.1</td>
+<td>Inventory existing Quornex/OMK telemetry, GitOps, identity, operators and hardware access. Produce platform capability/repair-ownership manifest.</td>
+<td>Show what is reused, missing and prohibited for OMK, EKS EC2, Auto Mode and Fargate; no duplicate repair owners.</td>
+</tr>
+<tr>
+<td>P0.2</td>
+<td>One full deterministic loop: bounded temporary-directory exhaustion detection → explanation → typed catalogue cleanup of Nightshift-owned disposable files → permission check → execution → verification.</td>
+<td>Verify deletion limits, excluded paths, stale/replayed approval rejection, revocation and denial paths. No free-form command input; no customer files involved.</td>
+</tr>
+<tr>
+<td>P0.3</td>
+<td>Executor failure/concurrency campaign: crash before/after mutation, duplicate delivery, controller pause/lease loss, target replacement and partial results.</td>
+<td>At most one authorized logical action; ambiguous outcomes reconcile safely; competing repairs stop; audit reconstructs the sequence. Failure blocks autonomous rollout.</td>
+</tr>
+<tr>
+<td>P0.4</td>
+<td>Privacy and injection harness against real outbound sockets, queues and error paths; fake secrets, confidential strings and hostile instructions.</td>
+<td>No seeded disallowed fields/strings escape in the stated corpus; schema errors fail closed; model cannot acquire execution authority. Report scope, not “100% privacy.”</td>
+</tr>
+<tr>
+<td>P0.5</td>
+<td>Stop Prometheus and the checker, and interrupt the API connection and fleet link, in separate tests; test cold restart during 24-hour then seven-day management outage.</td>
+<td>Independent monitor notices stale/missing data; local permitted behavior survives within its authorization window; no approval inferred from silence. Alert-delay measurements recorded.</td>
+</tr>
+<tr>
+<td>P1.1</td>
+<td>Real OMK SMART/BMC matrix: NVMe/SATA/RAID, NIC error counters, PSU/fan sensors, unreachable BMC and missing fields. Use lab hardware plus Redfish fixtures.</td>
+<td>Correct model/firmware capability reporting; read-only scrapes; unsupported fields visibly unknown. Fixtures do not validate real power-loss behavior.</td>
+</tr>
+<tr>
+<td>P1.2</td>
+<td>EKS ownership and limits trial in a disposable environment, including provider repair and unavailable permissions.</td>
+<td>No race with EKS repair; control-plane/Fargate exclusions explicit; AWS bills and privacy-boundary exceptions recorded.</td>
+</tr>
+<tr>
+<td>P1.3</td>
+<td>Prometheus vs VictoriaMetrics and pipeline/backends at fixed cardinality, log rates, bursts, churn and queries.</td>
+<td>Measure idle/p95 CPU/RSS, disk/WAL/queue growth, dropped records and recovery. Fit a per-node/per-cluster cost model; reject defaults exceeding agreed envelope.</td>
+</tr>
+<tr>
+<td>P1.4</td>
+<td>AI benchmark: deterministic templates, K8sGPT analyzers, restricted HolmesGPT; hosted facts vs local model on same incident cases.</td>
+<td>Incident-level explanation usefulness, unsupported claims, schema compliance, latency, token use and human handling time. No promotion based solely on framework benchmark marketing.</td>
+</tr>
+<tr>
+<td>P2.1</td>
+<td>Scale sanitized control plane: 100 real/simulated agents, then 1k/10k connections, reconnect storms, certificate expiry and fleet-wide bad release.</td>
+<td>Demonstrate tenant isolation, bounded queues, rollout stop, backpressure and restore. Simulators establish control-plane behavior only, not 10k real-cluster telemetry performance.</td>
+</tr>
+<tr>
+<td>P2.2</td>
+<td>Fencing and disruptive recovery tests with stateful fixtures, provider race and partitioned nodes; compare NHC/SNR or typed BMC action.</td>
+<td>Independent fencing evidence before workload relocation; application-consistency checks; no mass reboot. Keep disruptive repairs disabled if tests fail.</td>
+</tr>
+<tr>
+<td>P2.3</td>
+<td>Canary pilot, suggested 5 → 25 → 100 clusters after review; staged release/rollback exercise.</td>
+<td>Measure damaging repairs, harmless failures, false alerts, local overhead, human minutes and actual dollars/cluster; pause expansion on safety or isolation failure.</td>
+</tr>
+</tbody>
+</table>
+<p>Use Chaos Mesh versus Chaos Toolkit where their privileges and experiment model fit; a manual failure harness is sufficient for the smallest VM demonstration. Production chaos infrastructure is optional, not part of every customer install. The top-20 failure catalogue should determine test coverage: include silent NIC/node, disk exhaustion/health, memory pressure, runtime failure, API partition, certificate/credential expiry, monitoring failure and service dependency failures.</p>
+<h2 id="13-open-decisions-for-architecture-review-and-party-mode">13. Open decisions for architecture review and Party Mode</h2>
+<ol>
+<li>What telemetry, operators, identity, storage and fleet APIs does Quornex already ship? This could change much of the incremental stack.</li>
+<li>Which actions require per-attempt Orvex approval, how does last-resort permission expire, and what can run while approval services are unreachable? Preserve current PRD open questions.</li>
+<li>Does the privacy boundary permit CloudWatch, a customer's control cluster or shared inference within that customer's infrastructure? Until resolved, preserve the stricter originating-cluster boundary.</li>
+<li>Minimum OMK topology, OOB management, independent power/network and hardware permissions? Without these, promise uncertainty/escalation rather than fault-specific diagnosis.</li>
+<li>Cluster-size distribution, retention, cardinality, log volume, SLOs, outage duration and latency targets? These drive sizing more than fleet count alone.</li>
+<li>Which stateful workload protections and fencing evidence are required? Some proposed mitigations may be disallowed permanently.</li>
+<li>What availability is required of Nightshift during Kubernetes quorum loss versus management disconnection? They require different designs.</li>
+<li>What patch/support ownership and license obligations can the team sustain? Exact advisory clearance and hardware-specific qualification remain unfinished adoption gates.</li>
+</ol>
+<p><strong>Suggested Party Mode challenge:</strong> defend the local repair boundary; test custom controller versus Argo; quantify always-on overhead; question whether hosted fact-only diagnosis is useful enough; challenge BMC assumptions and provider races; resolve offline revocation and the existing PRD approval ambiguities. No decision in this report is adopted automatically.</p>
+<h2 id="14-evidence-appendix-and-refresh-policy">14. Evidence appendix and refresh policy</h2>
+<p>Detailed evidence, source URLs, license observations, release snapshots and limitations are in:</p>
+<ul>
+<li><a href="digests/observability.md">Observability</a></li>
+<li><a href="digests/hardware-execution.md">Hardware and execution</a></li>
+<li><a href="digests/ai-privacy.md">AI, prediction and privacy</a></li>
+<li><a href="digests/fleet-policy.md">Fleet, policy, identity and storage</a></li>
+<li><a href="digests/supplemental.md">Supplemental tracing, runtime security and test tools</a></li>
+</ul>
+<p>Sources were accessed on <strong>2026-10-29</strong>. Most documentation pages are undated living documents; release dates are recorded only when exposed. The <a href="sources.md">source index</a>, <a href="comparison-matrix.csv">comparison CSV</a>, <a href="architecture.mmd">Mermaid source</a> and <a href="verification.md">citation spot-check</a> accompany the report. This report uses direct links so each product fact can be checked without following a secondary summary. Additional screening notes cover <a href="digests/additional-screen.md">Zabbix, Netdata and Rancher Fleet</a>.</p>
+<p>Recheck release/security/compatibility claims before implementation and within one month (<strong>2026-11-29</strong> at latest); AI framework/edition behavior within three months (<strong>2027-01-29</strong>); maintenance signals within six months (<strong>2027-04-29</strong>). Resource/cost estimates expire as soon as actual measurements or pricing exist. Re-run the selection before adoption if the report is older than two quarters. No publisher claim establishes absence of vulnerabilities, safe arbitrary remediation or assembled-stack fleet capacity.</p>
+<details><summary>Full source index</summary><h1 id="source-index">Source index</h1>
+<p>Accessed 2026-10-29. Official project maintainers/documentation publishers only. This index records sources referenced by the report and digests, not independently verified claims. Release-specific publication dates and confidence limits are in the digests. Undated documentation must not be assigned an invented publication date.</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Publisher host</th>
+<th>Used in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/prometheus/prometheus">Prometheus</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.victoriametrics.com/victoriametrics/">VictoriaMetrics OSS</a></td>
+<td>docs.victoriametrics.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/fluent/fluent-bit">Fluent Bit</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-telemetry/opentelemetry-collector">OTel Collector</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vectordotdev/vector">Vector</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/loki">Loki</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/opensearch-project/OpenSearch">OpenSearch</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus/node_exporter">node_exporter</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kubernetes/kube-state-metrics">kube-state-metrics</a></td>
+<td>github.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kubernetes/node-problem-detector">NPD</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus-community/smartctl_exporter">smartctl_exporter</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/AnalogJ/scrutiny">Scrutiny</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus-community/ipmi_exporter">ipmi_exporter</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/comcast/fishymetrics">fishymetrics</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/healthchecks/healthchecks">Healthchecks</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md, digests/observability.md, digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus/blackbox_exporter">blackbox_exporter</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#predict_linear">Prometheus rules/functions</a></td>
+<td>prometheus.io</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/online-ml/river">River</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/yzhao062/pyod">PyOD</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/HolmesGPT/holmesgpt">HolmesGPT</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/k8sgpt-ai/k8sgpt">K8sGPT</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kagent-dev/kagent">kagent</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jaegertracing/jaeger">Jaeger</a></td>
+<td>github.com</td>
+<td>research.md, digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/tempo">Tempo</a></td>
+<td>github.com</td>
+<td>research.md, digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://prometheus.io/docs/prometheus/latest/storage/">Prometheus storage</a></td>
+<td>prometheus.io</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://opentelemetry.io/docs/collector/resiliency/">OTel resilience</a></td>
+<td>opentelemetry.io</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.fluentbit.io/manual/data-pipeline/buffering.md">Fluent Bit buffering</a></td>
+<td>docs.fluentbit.io</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://vector.dev/docs/architecture/buffering-model/">Vector buffering</a></td>
+<td>vector.dev</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://grafana.com/docs/loki/latest/operations/authentication/">authentication layer</a></td>
+<td>grafana.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.opensearch.org/latest/install-and-configure/install-opensearch/index/">installation guide</a></td>
+<td>docs.opensearch.org</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://www.zabbix.com/life_cycle_and_release_policy">LTS lifecycle</a></td>
+<td>www.zabbix.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://www.zabbix.com/license">license policy</a></td>
+<td>www.zabbix.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://www.zabbix.com/documentation/current/en/manual/distributed_monitoring/proxies">proxy documentation</a></td>
+<td>www.zabbix.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/netdata/netdata">repository</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/netdata/netdata/releases">v2.12.0 release notes</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kubernetes-sigs/controller-runtime">controller-runtime</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/argoproj/argo-workflows">Argo Workflows</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/temporalio/temporal">Temporal</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/StackStorm/st2">StackStorm</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/medik8s/node-healthcheck-operator">Medik8s NHC</a></td>
+<td>github.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/medik8s/self-node-remediation">SNR</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-policy-agent/opa">OPA</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cedar-policy/cedar">Cedar</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/redactionprocessor">OTel redaction</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/data-privacy-stack/presidio">Presidio</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/BerriAI/litellm">LiteLLM OSS</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vllm-project/vllm">vLLM</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ollama/ollama">Ollama</a></td>
+<td>github.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/fluxcd/flux2">Flux</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/argoproj/argo-cd">Argo CD</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-cluster-management-io/ocm">OCM</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/nats-io/nats-server">NATS JetStream</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://www.sqlite.org/copyright.html">SQLite</a></td>
+<td>www.sqlite.org</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://www.postgresql.org/about/licence/">PostgreSQL</a></td>
+<td>www.postgresql.org</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/keycloak/keycloak">Keycloak</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/dexidp/dex">Dex</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/spiffe/spire">SPIRE</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cert-manager/cert-manager">cert-manager</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/openbao/openbao">OpenBao</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/getsops/sops">SOPS</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus/alertmanager">Alertmanager</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/binwiederhier/ntfy">ntfy</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gotify/server">Gotify</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/grafana">Grafana</a></td>
+<td>github.com</td>
+<td>research.md, digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://argo-workflows.readthedocs.io/en/latest/workflow-restrictions/">restricted template execution</a></td>
+<td>argo-workflows.readthedocs.io</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://argo-workflows.readthedocs.io/en/latest/walk-through/suspending/">suspension</a></td>
+<td>argo-workflows.readthedocs.io</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://www.openpolicyagent.org/docs/security">security documentation</a></td>
+<td>www.openpolicyagent.org</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.cedarpolicy.com/auth/authorization.html">Cedar authorization</a></td>
+<td>docs.cedarpolicy.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/rancher/fleet">Rancher Fleet</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://fleet.rancher.io/">documentation</a></td>
+<td>fleet.rancher.io</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/rancher/fleet/releases">release stream</a></td>
+<td>github.com</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://www.dmtf.org/standards/redfish">DMTF management standard</a></td>
+<td>www.dmtf.org</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.aws.amazon.com/eks/latest/userguide/fargate.html">Fargate restrictions</a></td>
+<td>docs.aws.amazon.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.aws.amazon.com/eks/latest/userguide/node-health.html">node health behavior</a></td>
+<td>docs.aws.amazon.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.aws.amazon.com/eks/latest/userguide/node-repair.html">repair settings</a></td>
+<td>docs.aws.amazon.com</td>
+<td>research.md, digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html">control-plane logging</a></td>
+<td>docs.aws.amazon.com</td>
+<td>research.md, digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://holmesgpt.dev/latest/data-sources/builtin-toolsets/bash/">Bash toolset documentation</a></td>
+<td>holmesgpt.dev</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://presidio.dataprivacystack.org/faq/">FAQ</a></td>
+<td>presidio.dataprivacystack.org</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.ollama.com/faq">Ollama's FAQ</a></td>
+<td>docs.ollama.com</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.vllm.ai/en/latest/usage/security/">vLLM security guidance</a></td>
+<td>docs.vllm.ai</td>
+<td>research.md, digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://www.postgresql.org/docs/current/ddl-rowsecurity.html">Postgres RLS</a></td>
+<td>www.postgresql.org</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.nats.io/learn/security/accounts-and-multitenancy">NATS accounts</a></td>
+<td>docs.nats.io</td>
+<td>research.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/zabbix/zabbix">https://github.com/zabbix/zabbix</a></td>
+<td>github.com</td>
+<td>digests/additional-screen.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/HolmesGPT/holmesgpt/releases">HolmesGPT releases</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/k8sgpt-ai/k8sgpt/releases">K8sGPT releases</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kagent-dev/kagent/releases">kagent releases</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://holmesgpt.dev/0.43.0/data-sources/cross-cluster-tools/">cross-cluster tools</a></td>
+<td>holmesgpt.dev</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://prometheus.io/docs/prometheus/latest/querying/functions/">Prometheus function reference</a></td>
+<td>prometheus.io</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://riverml.xyz/latest/api/overview/">River API</a></td>
+<td>riverml.xyz</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/yzhao062/pyod/releases">PyOD 3.6.7</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/online-ml/river/releases">River 0.26.1</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/data-privacy-stack/presidio/releases">Presidio releases</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/BerriAI/litellm/blob/main/LICENSE">license</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.litellm.ai/docs/enterprise">edition matrix</a></td>
+<td>docs.litellm.ai</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.litellm.ai/docs/enterprise/version_support">Version support</a></td>
+<td>docs.litellm.ai</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/BerriAI/litellm/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md">llama.cpp server reference</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vllm-project/vllm/releases">vLLM v0.32.0</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ggml-org/llama.cpp/releases">llama.cpp</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ollama/ollama/releases">Ollama v0.40.13</a></td>
+<td>github.com</td>
+<td>digests/ai-privacy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cedar-policy/cedar/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/keycloak/keycloak/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/dexidp/dex/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/spiffe/spire/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/openbao/openbao/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cert-manager/cert-manager/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/getsops/sops/releases">Official releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://www.postgresql.org/support/versioning/">Official version policy</a></td>
+<td>www.postgresql.org</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://sqlite.org/changes.html">Official release history</a></td>
+<td>sqlite.org</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://fluxcd.io/flux/components/source/ocirepositories/">https://fluxcd.io/flux/components/source/ocirepositories/</a></td>
+<td>fluxcd.io</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://fluxcd.io/flux/security/best-practices/">https://fluxcd.io/flux/security/best-practices/</a></td>
+<td>fluxcd.io</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://argo-cd.readthedocs.io/en/stable/operator-manual/high_availability/">https://argo-cd.readthedocs.io/en/stable/operator-manual/high_availability/</a></td>
+<td>argo-cd.readthedocs.io</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://open-cluster-management.io/docs/concepts/architecture/">https://open-cluster-management.io/docs/concepts/architecture/</a></td>
+<td>open-cluster-management.io</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.nats.io/concepts/jetstream">https://docs.nats.io/concepts/jetstream</a></td>
+<td>docs.nats.io</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.nats.io/learn/topologies/leaf-nodes">https://docs.nats.io/learn/topologies/leaf-nodes</a></td>
+<td>docs.nats.io</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://www.sqlite.org/whentouse.html">https://www.sqlite.org/whentouse.html</a></td>
+<td>www.sqlite.org</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/fluxcd/flux2/releases">https://github.com/fluxcd/flux2/releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-policy-agent/opa/releases">https://github.com/open-policy-agent/opa/releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-cluster-management-io/ocm/releases">https://github.com/open-cluster-management-io/ocm/releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/nats-io/nats-server/releases">https://github.com/nats-io/nats-server/releases</a></td>
+<td>github.com</td>
+<td>digests/fleet-policy.md</td>
+</tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/prometheus-community/ipmi_exporter/master/README.md">README</a></td>
+<td>raw.githubusercontent.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/sapcc/redfish-exporter">Repository</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/prometheus-community/smartctl_exporter/master/README.md">README</a></td>
+<td>raw.githubusercontent.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/AnalogJ/scrutiny/master/README.md">README</a></td>
+<td>raw.githubusercontent.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/e-breuninger/redfish-exporter">e-breuninger</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/G-PORTAL/redfish_exporter">G-PORTAL</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/kubernetes/node-problem-detector/master/README.md">README</a></td>
+<td>raw.githubusercontent.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.aws.amazon.com/pdfs/eks/latest/userguide/eks-ug.pdf">AWS guide, node-health visibility section</a></td>
+<td>docs.aws.amazon.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/medik8s/node-healthcheck-operator/main/README.md">NHC README</a></td>
+<td>raw.githubusercontent.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://www.medik8s.io/remediation/self-node-remediation/how-it-works/">SNR behavior</a></td>
+<td>www.medik8s.io</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://www.medik8s.io/remediation/self-node-remediation/known-issues/">Known issues</a></td>
+<td>www.medik8s.io</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://www.medik8s.io/remediation/fence-agents-remediation/limitations/">FAR limitations</a></td>
+<td>www.medik8s.io</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/main/README.md">compatibility/versioning</a></td>
+<td>raw.githubusercontent.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.temporal.io/self-hosted-guide/deployment">Deployment</a></td>
+<td>docs.temporal.io</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://docs.stackstorm.com/install/system_requirements.html">Requirements</a></td>
+<td>docs.stackstorm.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus-community/ipmi_exporter/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Comcast/fishymetrics/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus-community/smartctl_exporter/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/AnalogJ/scrutiny/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/medik8s/node-healthcheck-operator/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/medik8s/self-node-remediation/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kubernetes-sigs/controller-runtime/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/argoproj/argo-workflows/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/temporalio/temporal/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/StackStorm/st2/releases">Releases</a></td>
+<td>github.com</td>
+<td>digests/hardware-execution.md</td>
+</tr>
+<tr>
+<td><a href="https://opentelemetry.io/docs/collector/deploy/">deployment</a></td>
+<td>opentelemetry.io</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://grafana.com/docs/loki/latest/get-started/overview/">overview</a></td>
+<td>grafana.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus/prometheus/releases">https://github.com/prometheus/prometheus/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/VictoriaMetrics/VictoriaMetrics/releases">https://github.com/VictoriaMetrics/VictoriaMetrics/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-telemetry/opentelemetry-collector/releases">https://github.com/open-telemetry/opentelemetry-collector/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/fluent/fluent-bit/releases">https://github.com/fluent/fluent-bit/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vectordotdev/vector/releases">https://github.com/vectordotdev/vector/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/loki/releases">https://github.com/grafana/loki/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/opensearch-project/OpenSearch/releases">https://github.com/opensearch-project/OpenSearch/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus/node_exporter/releases">https://github.com/prometheus/node_exporter/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kubernetes/kube-state-metrics/releases">https://github.com/kubernetes/kube-state-metrics/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kubernetes/node-problem-detector/releases">https://github.com/kubernetes/node-problem-detector/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/prometheus/blackbox_exporter/releases">https://github.com/prometheus/blackbox_exporter/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/healthchecks/healthchecks/releases">https://github.com/healthchecks/healthchecks/releases</a></td>
+<td>github.com</td>
+<td>digests/observability.md, digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/grafana/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/tempo/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jaegertracing/jaeger/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/falcosecurity/falco">Source</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/falcosecurity/falco/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://falco.org/docs/setup/kubernetes/">Kubernetes deployment</a></td>
+<td>falco.org</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cilium/tetragon">Source</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cilium/tetragon/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://tetragon.io/docs/getting-started/install-k8s/">installation</a></td>
+<td>tetragon.io</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chaos-mesh/chaos-mesh">Source</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chaos-mesh/chaos-mesh/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chaostoolkit/chaostoolkit">Source</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chaostoolkit/chaostoolkit/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://chaostoolkit.org/reference/usage/run/">execution</a></td>
+<td>chaostoolkit.org</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/grafana/security">Grafana security</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/grafana/tempo/security">Tempo security</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jaegertracing/jaeger/security">policy</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/falcosecurity/falco/security">policy/advisories</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/cilium/tetragon/security">Security page</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chaos-mesh/chaos-mesh/security">Policy</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chaostoolkit/chaostoolkit/security">Retrieved page</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/louislam/uptime-kuma">Source</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/louislam/uptime-kuma/releases">releases</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+<tr>
+<td><a href="https://github.com/louislam/uptime-kuma/security">Policy/advisories</a></td>
+<td>github.com</td>
+<td>digests/supplemental.md</td>
+</tr>
+</tbody>
+</table>
+</details></main></html>

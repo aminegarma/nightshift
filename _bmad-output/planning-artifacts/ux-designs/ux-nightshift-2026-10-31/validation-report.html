@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UX Design Validation: Nightshift</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--muted);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 500; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9em; background: rgba(120,113,108,0.10); padding: 0 4px; border-radius: 3px; }
+  .finding-location code { background: none; padding: 0; }
+  .sev-counts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .dim-judgment ul { margin: 0 0 10px; padding-left: 20px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header class="report-header">
+      <div class="title">
+        <h1>Nightshift — UX Design Validation Report</h1>
+        <div class="subtitle">/home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/DESIGN.md (status: draft)<br>/home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/EXPERIENCE.md (status: draft)</div>
+        <div class="sev-counts"><span class="badge badge-sev-critical">3 critical</span><span class="badge badge-sev-high">21 high</span><span class="badge badge-sev-medium">41 medium</span><span class="badge badge-sev-low">26 low</span></div>
+      </div>
+    </header>
+
+    <div class="synthesis">
+      <p>The pair is a usable contract. All five PRD journeys (verbatim names) plus Flow 6 and Flow 7 have a protagonist, numbered steps, a climax and a failure path. Every colour token has a hex value with a <code>-dark</code> twin and stated contrast. The 16 named components appear under identical names in both spines with real rules, and all 72 <code>{token}</code> references resolve. Nothing is critical. The gaps are at the edges: unnamed components that carry real screens (the B1 cluster card, timeline entries, links, console-sized buttons), a few statuses and states with no definition ("Waiting for later waves", "Out of date" listed as a repair status), open-item IDs that collide with surface IDs, and a lot of provenance narration that downstream readers do not need.</p>
+      <p>The two extra reviewers shift the picture. The rubric checks whether the contract is complete and consistent, and it largely is. The accessibility and adversarial reviewers check whether the behaviour it commits to is safe for a half-awake person at 3 AM, and both say the pair is <strong>not ready to hand off</strong>, with three criticals between them, all at the moment of decision: Approve and Reject are irreversible single taps on a phone with no confirmation, undo or withdrawal (accessibility); an approval can be committed on evidence other than what the person read, because nothing ties the tap to the version on screen (adversarial); and in A3 the single <strong>Approve this repair</strong> button can collapse the customer's approval and Orvex technical approval into one click by Orvex (adversarial). Their high findings sit at the same edges: evidence changing under the reader, several people deciding one request, the manual-repair lifecycle between "approved" and "I've done it", alert-only and channel switches with requests open, healthy words on out-of-date customer cards, AI text in unlabelled lines, and live console refresh with no pause or focus rule. They also converge with the rubric on undefined link and interactive states, the fleet-reports-off grid tile and dark-mode text on the stale hatch (4.28:1). Across all three reviewers: 3 critical, 21 high, 41 medium, 26 low.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">1. Flow coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">2. Token completeness</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">3. Component coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">4. State coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">5. Visual reference coverage</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">6. Bloat &amp; overspecification</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">7. Inheritance discipline</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">8. Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+    </div>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>1. Flow coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: UJ-1 to UJ-5 from <code>prd.md</code> §2 (names verbatim), Flow 6 and Flow 7 from the memlog, plus every FR with a user-facing surface (FR-5, FR-11 to FR-16, FR-19 to FR-24, FR-27/28, FR-32 to FR-34, FR-47, FR-50 to FR-52). All seven Key Flows name a protagonist, number their steps, mark a climax and give a failure path. UJ-4's "not applicable" is defensible.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">UJ-1's severity is still undecided.</h3>
+              <span class="finding-location">Key Flows › UJ-1 step 2; State Patterns › Severity</span>
+            </header>
+            <div class="finding-note">The customer wireframe (B1, B2, B3, Slack) shows "Severity: Critical", and State Patterns maps Critical to a phone call, but UJ-1 step 2 sends a Slack alert. The memlog's last entry lists this as "Open for Amine", yet it is not in EXPERIENCE › Open items, so a mock or story built from the wireframe will show Critical plus a call.</div>
+            <div class="finding-fix"><strong>Fix:</strong> decide (Warning fits "alert when a decision is needed") and record it in UJ-1, or add it to Open items.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">No flow for a customer-performed manual repair or hardware escalation</h3>
+              <span class="finding-location">Key Flows; IA › Customer view</span>
+            </header>
+            <div class="finding-note">There is no flow for the customer-performed manual repair or for hardware escalation (FR-20, FR-52: "the customer, or their hardware provider, for hardware and for the customer's own app"; Nightshift "prepares the evidence for the customer to send"). The only coverage is one sentence in Component Patterns › Manual-repair panel and a wireframe annotation next to B3-M after Approve. The evidence hand-off to a provider has no surface.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a variant to Flow 7 or a short Flow 8: the customer performs it or forwards the evidence, then presses <strong>I've done it: check now</strong>, then Nightshift checks.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">FR-19 (no tested repair: explain, state uncertainty, escalate, don't repair) has no flow and no B2/A2 variant.</h3>
+              <span class="finding-location">IA › A2, B2; State Patterns › Surface states</span>
+            </header>
+            <div class="finding-note">Both IA rows assume a proposed repair always exists.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a "No tested repair" state for A2/B2: what replaces the proposed-repair section, and who is told.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>2. Token completeness</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: 68 colour tokens (34 light, each with a <code>-dark</code> twin, all valid 6-digit hex, all matching the Graphite Ledger block in <code>.working/color-themes-1.html</code>), 12 typography roles, 4 radii, 13 spacing tokens and 27 component entries. 62 references in DESIGN.md and 10 in EXPERIENCE.md all resolve. Contrast is stated for every neutral and every status ink-on-fill pair, light and dark.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Several component values are prose rather than tokens</h3>
+              <span class="finding-location">DESIGN.md frontmatter <code>components</code></span>
+            </header>
+            <div class="finding-note">Several component values are prose rather than tokens, so code that mirrors the spine has to parse them by hand: <code>'hatch 135deg {colors.stale-hatch-base} 5px / {colors.stale-hatch-stripe} 5px'</code> (chip-stale, stale-panel; 6px in attention-queue-row-stale), <code>severity-bar: '3px inset left, … by severity'</code>, <code>summary-tile.critical-variant: '… with … border'</code>, <code>health-grid-tile.no-open-problem: '… with 1px … outline'</code>, and <code>focus: '3px solid …, offset 2px'</code>.</div>
+            <div class="finding-fix"><strong>Fix:</strong> split them into structured sub-keys (<code>hatch-angle</code>, <code>hatch-stripe-width</code>, <code>base</code>, <code>stripe</code>; <code>bar-width</code>; <code>outline-width</code>, <code>outline-offset</code>) or give the literal CSS as the palette sheet does (<code>repeating-linear-gradient(135deg, … 0 5px, … 5px 10px)</code>).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Contrast is not stated for <code>text-secondary</code> on tinted fills and on hatch, which are load-bearing pairs: the freshness line closes the Verified facts block, and stale customer cards read "Out of date · Last updated 02:10".</h3>
+              <span class="finding-location">DESIGN.md › Colors; Components › Freshness line, Stale panel</span>
+            </header>
+            <div class="finding-note">Computed values: dark <code>#A3A9B3</code> on <code>stale-hatch-stripe-dark</code> <code>#3E4248</code> is <strong>4.28:1, below 4.5:1</strong>. Light on the stale stripe is 5.19:1. On success, explanation and critical fills it is 6.4–6.8 (light) and 5.5–6.5 (dark).</div>
+            <div class="finding-fix"><strong>Fix:</strong> say that text on a stale panel or card uses <code>neutral-ink</code> (5.6:1 dark), or adjust the dark stripe, and add the text-secondary-on-fill rows to the contrast table.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>3. Component coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: the 16 named components (Status chips, Verified facts block, Explanation block, Approval card, Manual-repair panel, Primary button, Secondary button, Attention-queue row, Summary tile, Health-grid tile, Freshness line, Stale panel, Info card, Check table, Progress steps, Settings row). Each has a DESIGN.md › Components entry and an EXPERIENCE.md › Component Patterns row with real rules, under identical names. Also swept both spines and both 2026-11-03 wireframes for UI elements that are used but have no name.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The <strong>cluster card</strong> has no spec in either spine.</h3>
+              <span class="finding-location">IA › B1, B2 "Reached from: Cluster card", B4; State Patterns › Freshness</span>
+            </header>
+            <div class="finding-note">It is the main element of B1 (one per cluster: severity, status, impact in words, freshness) and has its own states: current, "Out of date · Last updated 02:10", resolved, alert-only. The <strong>timeline entry</strong> that B4 Activity and the A2 Timeline are built from has no spec either; Progress steps covers only part of a B4 row.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add "Cluster card" and "Timeline entry" to DESIGN.md Components (tokens and prose) and EXPERIENCE.md Component Patterns (behaviour, states, click target).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Links and text actions are not defined</h3>
+              <span class="finding-location">DESIGN.md › Do's and Don'ts; EXPERIENCE.md › Interaction Primitives</span>
+            </header>
+            <div class="finding-note">Links and text actions are not defined: "Review the proposed repair", "Review approval →", "Open in Quornex portal to review", "See full activity", "Ticked in your settings on 12 Oct", "Read the policy", "Dispute", "Revoke delegation", "Data leaving your cluster and management policy ›". The spines don't say which are buttons and which are links, or give a link colour or focus treatment. <code>primary</code> is reserved for the one decision per screen.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a <code>link</code> component (colour, underline, focus) and assign each of these labels to button-secondary or link.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">There are no console-sized buttons.</h3>
+              <span class="finding-location">DESIGN.md frontmatter <code>button-*</code>; Layout &amp; Spacing › Console</span>
+            </header>
+            <div class="finding-note"><code>button-primary</code> and <code>button-secondary</code> hard-wire <code>{typography.customer-action}</code> (17px) and <code>{spacing.customer-tap-min}</code> (44px), but A3, A3-M and A4 also use <strong>Approve this repair</strong>, <strong>Reject</strong> and <strong>Approve rollback for these 300 clusters</strong> in the dense console.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a console size variant (console-chip or console-body type, compact padding).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Interactive state appearance is missing beyond focus</h3>
+              <span class="finding-location">DESIGN.md › Components; EXPERIENCE.md › State Patterns › Surface states</span>
+            </header>
+            <div class="finding-note">Interactive state appearance is missing beyond focus: hover and pressed for buttons, queue rows and tiles; the selected group in the A1 selector; disabled or read-only controls for "Not an administrator" (B6, B6b) and "Orvex support, not delegated" (A3, A3-M).</div>
+            <div class="finding-fix"><strong>Fix:</strong> add hover, pressed, selected and read-only tokens or rules. A disabled ink token would also cover read-only settings.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The health-grid "Fleet reports not permitted" state has no visual spec</h3>
+              <span class="finding-location">EXPERIENCE.md › Component Patterns › Health-grid tile; DESIGN.md <code>health-grid-tile</code></span>
+            </header>
+            <div class="finding-note">The health-grid tile state "Heartbeat OK · Fleet reports not permitted: not included in fleet-wide correlation" is in EXPERIENCE.md › Component Patterns › Health-grid tile and in the A1 legend, but DESIGN.md <code>health-grid-tile</code> defines only critical, warning, no-open-problem and out-of-date.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add its visual treatment (for example a no-open-problem tile with a marker and legend entry).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Three A4 and A2/B2 elements have no component</h3>
+              <span class="finding-location">IA › A2, A4, B2</span>
+            </header>
+            <div class="finding-note">Three A4 and A2/B2 elements have no component: the A4 wave progress (Step 3: "Wave 1 of 6 done…"), the A4 per-cluster table (permission, safety checks, repair status), and the <strong>What Nightshift cannot see</strong> block on A2 and B2. Because green means verified and yellow means explanation, a builder has to know this block is neither.</div>
+            <div class="finding-fix"><strong>Fix:</strong> name them. State that "What Nightshift cannot see" sits on a plain surface, and that the A4 table reuses Check table with a repair-status column.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Navigation, filters, selector, legend and compact decision card have no visual spec</h3>
+              <span class="finding-location">EXPERIENCE.md › IA; DESIGN.md › Components › Approval card</span>
+            </header>
+            <div class="finding-note">The top navigation bar, the A5 dropdown filters, the A1 group selector, the health-grid legend and B1's compact "Needs your decision" card are named but have no visual spec beyond "compact version".</div>
+            <div class="finding-fix"><strong>Fix:</strong> one line each, or point to the Quornex system once it is mapped.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Only <code>severity-chip</code> carries typography.</h3>
+              <span class="finding-location">DESIGN.md frontmatter</span>
+            </header>
+            <div class="finding-note">The incident, repair and risk chip families and the base <code>chip-*</code> tokens have no type, padding or height, so console and customer chips may differ in size.</div>
+            <div class="finding-fix"><strong>Fix:</strong> put typography and padding on the base <code>chip-*</code> tokens.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>4. State coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked every IA surface (A1–A5, A3-M, Orvex support, Slack, B1–B6, B6b, onboarding, in-cluster dashboard) for empty, cold-load, focus, error, offline, permission-denied, stale and domain states. Coverage is broad but often marked [ASSUMPTION]: freshness, approval validity, withdrawn and re-issued requests, reject, alert-only, non-admin, decision not recorded, tick again and policy pending are all present.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">"Waiting for later waves" is not a defined repair status</h3>
+              <span class="finding-location">State Patterns › Repair status; UJ-5 step 6; A4 wireframe</span>
+            </header>
+            <div class="finding-note">"Waiting for later waves" (UJ-5 step 6; A4 wireframe) is used as a per-cluster repair status but is not among the State Patterns › Repair status values and has no chip mapping in DESIGN.md.</div>
+            <div class="finding-fix"><strong>Fix:</strong> define it as an A4-only rollout state with its chip (neutral or waiting), or add it to the repair status values.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">B3 and B3-M lack "already decided" and "may not approve" states</h3>
+              <span class="finding-location">State Patterns › Surface states; Open items A5</span>
+            </header>
+            <div class="finding-note">B3 and B3-M have no state for a request someone else has already answered (a delegate approved it, or another administrator rejected it) or for a signed-in person who may not approve (permission denied). Approver roles are [OPEN], but the screen state can be fixed now.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add "Already decided by &lt;name&gt; at &lt;time&gt;" (no buttons) and "You can't approve this request" (says who can).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Several empty states are missing: A5 when the filters match nothing, B4 with no activity yet, and B5 after a quiet night.</h3>
+              <span class="finding-location">State Patterns › Surface states</span>
+            </header>
+            <div class="finding-note">The B5 wireframe shows "Nothing needs your decision right now." but no "nothing happened" summary.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add one line each.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Load and save failures outside decisions are not covered: settings changes failing to save (B6, B6b, onboarding), and the console or portal failing to load at all.</h3>
+              <span class="finding-location">State Patterns › Surface states, "Decision not recorded" covers decisions only</span>
+            </header>
+            <div class="finding-note">That is different from one cluster being stale.</div>
+            <div class="finding-fix"><strong>Fix:</strong> extend the "not recorded" rule to settings and add a page-level load error.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Two states are marked as not settled: "Request withdrawn" (wording not drafted) and "Manual repair, problem still there" (next step not recorded).</h3>
+              <span class="finding-location">State Patterns › Surface states</span>
+            </header>
+            <div class="finding-note">Neither is in Open items, so it is unclear who closes them.</div>
+            <div class="finding-fix"><strong>Fix:</strong> draft the wording or list both in Open items with an owner.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">A3 has no state for two Orvex engineers deciding the same request at once.</h3>
+              <span class="finding-location">A3; Open items A5 "two different people"</span>
+            </header>
+            
+            <div class="finding-fix"><strong>Fix:</strong> reuse the "Already decided" state above.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>5. Visual reference coverage</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: <code>imports/</code> is empty, and <code>mockups/</code> and <code>wireframes/</code> don't exist yet (mocks are pending and were ignored). <code>.working/</code> holds the two current wireframes (linked from DESIGN.md › Layout &amp; Spacing by frame and from EXPERIENCE.md › Foundation), the palette sheet (linked from DESIGN.md › Colors, naming the Graphite Ledger block), the 2026-10-31 wireframes (declared superseded) and ia-proposal-v1/v2 (superseded drafts, rightly unlinked). Both spines say the spines win on any conflict with a wireframe or mock. No orphans.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Every visual link points into <code>.working/</code>.</h3>
+              <span class="finding-location">DESIGN.md banner, Colors, Layout; EXPERIENCE.md Foundation</span>
+            </header>
+            <div class="finding-note">That is acceptable before Finalize, but the links and both frontmatter <code>sources</code> lists will break when the files are promoted.</div>
+            <div class="finding-fix"><strong>Fix:</strong> when promoting to <code>wireframes/</code>, update the links and sources in both spines in the same edit.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">EXPERIENCE.md's visual references are file-level only</h3>
+              <span class="finding-location">EXPERIENCE.md › IA, Key Flows</span>
+            </header>
+            <div class="finding-note">EXPERIENCE.md's references are file-level only: the IA tables and Key Flows never point at a frame, while DESIGN.md › Layout does ("frame A1", "frames B3, B3-M").</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a frame reference per IA row (the surface IDs already match the frame titles).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Wireframe placeholder data contradicts the spine scenarios in ways a mock renderer will copy.</h3>
+              <span class="finding-location">.working wireframes A3-M and customer header; Key Flows › Flow 7, UJ-1</span>
+            </header>
+            <div class="finding-note">A3-M uses shop-us-2 / C-0450 / 03:00–05:00 with the customer approving at 02:05, while Flow 7 uses shop-us-1 / 01:00–03:00 / 23:58. The customer wireframe header labels the memory-leak scenario "UJ-2" (it is UJ-1). The spines-win rule covers this, but the three mocks being rendered may inherit it.</div>
+            <div class="finding-fix"><strong>Fix:</strong> align the wireframe text with Flow 7 and UJ-1 when promoting.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>6. Bloat &amp; overspecification</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: pixel values against tokens, restatement of source material, prose against tables, and narrative not tied to a decision. DESIGN.md is tight, and its editorial voice in Brand &amp; Style is appropriate. EXPERIENCE.md (~7,300 words, about three times the examples) is mostly load-bearing (exact labels, section orders, state wording) but carries noise.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Provenance and supersession narration runs through EXPERIENCE.md</h3>
+              <span class="finding-location">Foundation, Voice and Tone, State Patterns, Key Flows Flow 6 and Flow 7, Privacy</span>
+            </header>
+            <div class="finding-note">Provenance and supersession narration runs through EXPERIENCE.md: "(Amine, 2026-11-03)", "accepted 2026-11-03", "superseded 2026-11-03", "as corrected the same day", "PRD change pending", dozens of times. Two rows of the Voice and Tone "Don't" column record withdrawn strings ("Expires at 02:44", "Heartbeat not permitted…") rather than anti-patterns a writer might reach for. This history belongs in the memlog.</div>
+            <div class="finding-fix"><strong>Fix:</strong> strip the attributions and keep each "Don't" only where it is a real temptation.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The same rules are stated in several places, which invites drift.</h3>
+              <span class="finding-location">Voice and Tone; Interaction Primitives; Authorisation &amp; approvals; IA; State Patterns</span>
+            </header>
+            <div class="finding-note">The Reject behaviour appears in Voice › Reject result, Interaction Primitives › Banned, Authorisation &amp; approvals › Reject and Inspiration. The B3-M order appears in IA, Component Patterns › Manual-repair panel and Flow 7 step 2. Approval validity appears in State Patterns, Voice › After Approve and Open items A2.</div>
+            <div class="finding-fix"><strong>Fix:</strong> give each rule one home and cross-reference it from the others.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The Authorisation &amp; approvals table and the Privacy &amp; outbound channels table restate FR-21 and FR-6/PRIV-9 at length.</h3>
+              <span class="finding-location">EXPERIENCE.md › Authorisation &amp; approvals, Privacy &amp; outbound channels</span>
+            </header>
+            <div class="finding-note">The UX additions (queue labels, surfaces, "what No means" copy) earn their place; the restated rule text does not.</div>
+            <div class="finding-fix"><strong>Fix:</strong> cite the FR for the rule and keep only the UX layer.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The "Pending PRD changes" paragraph is a work queue for <code>bmad-prd</code>, not something a downstream consumer reads.</h3>
+              <span class="finding-location">EXPERIENCE.md › Open items, last paragraph</span>
+            </header>
+            
+            <div class="finding-fix"><strong>Fix:</strong> move it to <code>.working/open-items-2026-11-03.md</code> and the memlog.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">DESIGN.md Components prose repeats pixel values the tokens carry</h3>
+              <span class="finding-location">DESIGN.md › Components</span>
+            </header>
+            <div class="finding-note">DESIGN.md › Components prose repeats pixel values the tokens already carry ("4px left border", "3px left bar", "1.5px … outline", "3px … 2px offset").</div>
+            <div class="finding-fix"><strong>Fix:</strong> reference the token, or accept it as readable restatement.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>7. Inheritance discipline</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: all 9 <code>sources</code> paths resolve in both spines. UJ names are verbatim. Glossary terms (Orvex technical approval, agreed management policy, customer production, problem group, last-resort condition, expected interruption, alert-only, delegation, manual repair needed) match the PRD. Component names are identical across both files. All 10 EXPERIENCE.md token references resolve to DESIGN.md tokens by name.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Two ID schemes collide.</h3>
+              <span class="finding-location">EXPERIENCE.md › Open items</span>
+            </header>
+            <div class="finding-note">Open items are numbered A1–A11 and B1, the same IDs as the surfaces A1–A5 and B1–B6. "[OPEN: architecture A6]" (Component Patterns › Explanation block) and "[OPEN: architecture A11]" (IA closure note) read like screen references, and "B1 Mapping neutral tokens" clashes with "B1 Home".</div>
+            <div class="finding-fix"><strong>Fix:</strong> renumber the open items (OI-1… or ARCH-1… / ORVEX-1) and update the inline references.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">DESIGN.md puts freshness inside the repair-status family.</h3>
+              <span class="finding-location">DESIGN.md frontmatter <code>repair-status-chip</code>, Components › Status chips</span>
+            </header>
+            <div class="finding-note"><code>repair-status-chip.out-of-date</code> and the prose list end with "Out of date (02:10)" (stale hatch). This contradicts EXPERIENCE.md's "four separate fields, never merged" and its repair status values; the queue shows "Out of date (02:10)" in the Updated column, not as a repair status.</div>
+            <div class="finding-fix"><strong>Fix:</strong> move it to a separate <code>freshness-chip</code> / <code>chip-stale</code> usage under Freshness.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The spines intentionally diverge from the current PRD</h3>
+              <span class="finding-location">EXPERIENCE.md › State Patterns › Freshness, Open items › Pending PRD changes</span>
+            </header>
+            <div class="finding-note">The spines intentionally diverge from the current PRD: the heartbeat is required (PRD FR-6, PRIV-9 and NFR-4 still say optional, and addendum "For the UX" still lists the two dropped status texts); unanswered requests don't expire; FR-52 gets a time window; and onboarding defaults change. This is tracked, but an architecture reader taking PRD and spines together meets conflicting rules.</div>
+            <div class="finding-fix"><strong>Fix:</strong> run the queued <code>bmad-prd</code> Update before architecture starts, or point architecture at the spine for these items.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Customer screens prefix "Severity:" and "Repair status:", but the spine gives no prefix for incident status.</h3>
+              <span class="finding-location">Component Patterns › Status chips</span>
+            </header>
+            <div class="finding-note">The wireframes show "Status: Waiting for customer".</div>
+            <div class="finding-fix"><strong>Fix:</strong> name the customer label for incident status.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">"Incident status" is broader than the PRD's "incident"</h3>
+              <span class="finding-location">State Patterns › Severity, statuses and risk</span>
+            </header>
+            <div class="finding-note">"Incident status" covers every problem (an informational disk cleanup included), while the PRD Glossary defines an <em>incident</em> as a user-facing disruption and a <em>problem</em> as any fault, failure or incident. The term is inherited from the PRD addendum, so this is noted rather than to be fixed here.</div>
+            <div class="finding-fix"><strong>Fix:</strong> none needed now; flag it for the PRD glossary.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Weak citations.</h3>
+              <span class="finding-location">State Patterns › Freshness; IA › A2</span>
+            </header>
+            <div class="finding-note">Freshness cites "(FR-4, FR-6)", but FR-4 is Nightshift's self-monitoring and the freshness rule is the pending FR-15 change. A2 cites "Danny, Exchange 5", but no Danny Q&amp;A file is in <code>sources</code> (<code>.working/extract-challenge-danny.md</code> exists).</div>
+            <div class="finding-fix"><strong>Fix:</strong> cite the pending FR-15 change, and add the Danny extract to sources or drop the citation.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>8. Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Checked: DESIGN.md has all eight canonical sections in locked order (Brand &amp; Style → Colors → Typography → Layout &amp; Spacing → Elevation &amp; Depth → Shapes → Components → Do's and Don'ts). EXPERIENCE.md has every required default (Foundation, IA, Voice and Tone, Component Patterns, State Patterns, Interaction Primitives, Accessibility Floor, Key Flows). Inspiration &amp; Anti-patterns is present and triggered (Grafana, Better Stack and PagerDuty in the memlog, plus rejected Clinical Contrast and Slack approval). Responsive &amp; Platform is present and triggered (desktop console, phone-first approvals). The three invented sections earn their place: Authorisation &amp; approvals maps FR-21 onto surfaces and labels, Privacy &amp; outbound channels holds B6b and onboarding content, and Open items gives owned handoffs to architecture.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding"><div class="finding-note">No findings beyond the trims listed under Bloat &amp; overspecification.</div></article>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Accessibility review</h2>
+          <span class="reviewer-source">review-accessibility.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p><strong>Not ready to finalise; the palette is sound, the behaviour is the risk.</strong> Every load-bearing text pair in Graphite Ledger passes AA in light and dark except one (<code>text-secondary</code> on the dark stale-hatch stripe, 4.28:1), and the palette sheet's stated ratios check out. Colour is consistently backed by words. The real gaps are behavioural: consequential one-tap decisions with no undo or confirmation on a phone, content that can change under the user's thumb on the approval screen, an undefined path from a 3 AM phone call to the portal (and none for people who can't hear a call), unconstrained sign-in/step-up, and a ten-section approval screen in partly technical language. Most of the Accessibility Floor is still <code>[ASSUMPTION]</code>, and screen-reader behaviour for live data, chips and progress steps is unspecified.</p>
+            <p><strong>Checked and fine:</strong></p>
+            <ul>
+              <li>All status ink-on-fill pairs, both block bodies (Verified facts, explanation), button labels, text on all three neutral surfaces and the focus ring against <code>background</code>/<code>surface</code>/<code>surface-raised</code> pass AA in both modes; the palette sheet's stated ratios match the computed ones to 0.01.</li>
+              <li>Colour is never the only signal: every chip carries its word, customer chips add the field name, grid tiles carry C/W plus a legend, stale states are labelled. Same-lightness fills (e.g. Running vs Waiting, 1.00:1; Critical vs Warning tile fill, 1.01:1) are fine because the word or letter differs.</li>
+              <li>Controls outlined in <code>text-secondary</code> (7.56:1 / 6.83:1) meet 1.4.11; severity bars (≥7.7:1) are redundant with the severity chip.</li>
+              <li>Button labels are specific and unique ("Approve this repair", not "OK"); Reject is not styled as dangerous or disabled.</li>
+              <li>Unanswered requests never expire, so there is no hidden timer on the decision itself.</li>
+            </ul>
+            <p>The full computed contrast table (light and dark, every load-bearing pair) is in <code>review-accessibility.md</code>.</p>
+            <div class="sev-counts"><span class="badge badge-sev-critical">1 critical</span><span class="badge badge-sev-high">6 high</span><span class="badge badge-sev-medium">12 medium</span><span class="badge badge-sev-low">4 low</span></div>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">Approve and Reject are irreversible single taps on a phone with no confirmation, no undo and no withdrawal.</h3>
+              <span class="finding-location">EXPERIENCE.md › Interaction Primitives "Decisions commit on one tap; the result screen is the confirmation"; Component Patterns › Primary button, Secondary button "Reject commits on one tap… no extra dialog"; DESIGN.md › Layout "full-width buttons at the end"</span>
+            </header>
+            <div class="finding-note">The buttons are stacked full-width at the bottom of a long scroll, 12px apart, used one-handed by a half-awake non-expert. Reject is the worse case: it blocks the repair and "won't ask for this repair again on its own", so a stray tap at 02:15 can leave checkout to fail at 06:00. A safe, not-ticked repair needs only the customer's approval (Authorisation table), so a stray Approve runs a production change with no second human. WCAG 3.3.4 (Error Prevention: reversible, checked or confirmed) is the closest criterion and the spines meet none of its three options.</div>
+            <div class="finding-fix"><strong>Fix:</strong> keep one tap, but make it reversible: after either tap, show the result screen with an <strong>Undo</strong> (e.g. 10–15 s, decision not sent until it lapses) and, for Approve, "Withdraw my approval" until the repair starts; record withdrawals in history. If undo is architecturally hard, use a bottom-sheet confirmation that restates action, target and interruption ("Restart checkout-api now? Checkout may be down 30–60 s.") with the confirm button in the same position as the original. Also add at least 24px between Approve and Reject on phone.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The approval screen can change or disappear while the user is reading it.</h3>
+              <span class="finding-location">EXPERIENCE.md › Approval validity "always shows current evidence… re-issued if the evidence or conditions materially change… withdrawn if the problem resolves"; State Patterns › Surface states "Request re-issued: current evidence replaces the old", "Request withdrawn: …no buttons remain"; Interaction Primitives › Live data "Panels refresh on their own"</span>
+            </header>
+            <div class="finding-note">If evidence is swapped in place, a person who read version 1 can tap Approve on version 2 (the Glossary ties approval to "evidence shown"); if buttons vanish, keyboard and screen-reader focus is lost to the page body and the thumb lands on whatever moved up (WCAG 3.2.2 / 3.2.5 spirit, 2.4.3).</div>
+            <div class="finding-fix"><strong>Fix:</strong> never mutate B3/B3-M/A3/A3-M content in place. Freeze the version on screen, show a polite, persistent banner "This request has changed. Review the new version" (role=status, announced once), disable both buttons until the new version is opened, and send the version ID with the decision so the server rejects a stale one. On withdrawal, replace the buttons with a sentence ("The problem went away at 02:31; nothing to decide") and move focus to it.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The phone call that wakes a Critical-severity customer has no designed route to the portal, and Critical relies on a voice call alone.</h3>
+              <span class="finding-location">EXPERIENCE.md › State Patterns › Severity "Critical → Phone call"; Information Architecture › Slack notification "(and phone call)"; Surface → journey closure "Phone-call content is not designed [OPEN: architecture A11]"; UJ-2 step 2 "He opens the request in the portal", Flow 7 step 2</span>
+            </header>
+            <div class="finding-note">A call carries no link, so Cris must find the portal, sign in and locate the request himself at 3 AM; a Deaf or hard-of-hearing owner gets no usable Critical alert at all.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state in the spines that every Critical call is paired with a text notification (SMS/push/Slack) carrying the deep link, that the call says so ("We've sent you a link by text") and offers to repeat, and that B1 opens with "Needs your decision" first after sign-in (already true). Let the customer choose text-only for Critical in B6b.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Sign-in and step-up authentication sit on the critical path of every approval but carry no accessibility constraint.</h3>
+              <span class="finding-location">EXPERIENCE.md › Interaction Primitives "Notifications deep-link through sign-in… Step-up authentication and approver roles [OPEN: architecture]"; Open items A5</span>
+            </header>
+            <div class="finding-note">WCAG 2.2 3.3.8 Accessible Authentication (Minimum) forbids cognitive function tests (remembering or transcribing codes) without an alternative; a portal session that expires while a screen-reader or magnifier user works through ten sections, then bounces Approve to a sign-in page, breaks 2.2.1 and loses the decision.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add to the Accessibility Floor: sign-in and step-up allow password managers and paste, offer passkeys or a device prompt, never require transcribing a code without a copy/paste or autofill path; deep links survive sign-in and land on the same request version; if the session will expire on B3/B3-M/A3, warn at least 20 s ahead with "Stay signed in", and after re-authentication return to the request with the pending decision preserved (never auto-submitted).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The customer approval screen asks a non-expert to process ten (B3) or eleven (B3-M) sections before reaching the decision, partly in infrastructure language.</h3>
+              <span class="finding-location">EXPERIENCE.md › Component Patterns › Approval card "B3 order: 1… 10", Manual-repair panel "B3-M order: 1… 11"; Key Flows UJ-1 step 4 "restart checkout-api (its only replica)", Flow 7 "stable on the standby interface", "node n-7"; Voice and Tone "Orvex technical approval", "repair catalogue", "rollback"</span>
+            </header>
+            <div class="finding-note">The content is right (memlog L11 requires it before approving), but there is no at-a-glance summary and no plain-language gloss for "replica", "rollback", "catalogue", "node", "checkout-api" or "Orvex technical approval".</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a three-line "What we're asking" summary directly under the lead sentence (action in plain words · expected interruption · what happens if you do nothing) with a "Go to decision" link; keep sections 1–9 in order but let 6 (Recovery plan) and 7 (Evidence) open as expandable sections with a one-line summary each; add a short plain-words gloss in the repair line ("Restart the checkout program (there's only one copy running, so checkout pauses briefly)"); rename "Orvex technical approval" for customers to "Orvex engineer's check". Write the gloss rules into Voice and Tone.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Fleet approval and policy acceptance also commit on one click</h3>
+              <span class="finding-location">EXPERIENCE.md › Interaction Primitives "Decisions commit on one tap"; UJ-5 step 5; Privacy &amp; outbound channels › Agreed management policy</span>
+            </header>
+            <div class="finding-note">Consequential console and settings actions also commit on one click: <strong>Approve rollback for these 300 clusters</strong> and <strong>Accept this change</strong> (which widens what Nightshift may do in production). "Accept this change" modifies the customer's stored permissions, squarely the data-modification case of WCAG 3.3.4; the fleet approval has the largest blast radius in the product.</div>
+            <div class="finding-fix"><strong>Fix:</strong> for the fleet approval, a confirmation step that restates counts ("300 clusters · 112 will still wait for their customer · runs in 6 waves") with the confirm control in place; for policy acceptance, a review-then-confirm step plus "Undo acceptance" while nothing has yet run under it. Record either in history.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Live refresh in the console has no pause and no rule for focus or re-sorting.</h3>
+              <span class="finding-location">EXPERIENCE.md › Interaction Primitives › Live data "[ASSUMPTION] Panels refresh on their own"; Component Patterns › Attention-queue row "Sort: customer impact, then time to impact"</span>
+            </header>
+            <div class="finding-note">A queue that re-sorts as times to impact change moves the row under the pointer or keyboard focus; a screen-reader user loses their place on every refresh. WCAG 2.2.2 (Pause, Stop, Hide) applies to auto-updating content shown alongside other content.</div>
+            <div class="finding-fix"><strong>Fix:</strong> keep focus on the same item across refreshes; don't re-order rows while focus or pointer is in the table: show "3 changes · Show" (role=status, announced once) and apply on request; add a visible "Pause live updates" toggle per page that also pauses the freshness counters; never steal focus on refresh.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Live text will over-announce or not announce at all; the spines don't say which.</h3>
+              <span class="finding-location">EXPERIENCE.md › Accessibility Floor "status changes… are announced to screen readers" [ASSUMPTION]; Component Patterns › Freshness line "every panel and card"; DESIGN.md › Freshness line "Updated 40 s ago"</span>
+            </header>
+            <div class="finding-note">A freshness line on every panel ticking each second, if marked live, makes a console page unusable with a screen reader; if not, the stale transition is silent.</div>
+            <div class="finding-fix"><strong>Fix:</strong> specify: freshness lines are plain text, never live regions; one polite live region per page announces only state transitions (current → out of date, repair status changes, "Needs your decision (n)" count changes), debounced and batched ("2 panels out of date: eu-2, eu-4"); customer view spells units out ("Updated 40 seconds ago").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Progress steps show the current step by chip styling only, and join steps with "→".</h3>
+              <span class="finding-location">DESIGN.md › Components › Progress steps "Repair-status words joined by arrows, current step as its chip"; EXPERIENCE.md › Component Patterns › Progress steps</span>
+            </header>
+            <div class="finding-note">"Which step are we on" is conveyed by visual treatment alone (WCAG 1.3.1, 1.4.1), and screen readers read "right arrow" between words.</div>
+            <div class="finding-fix"><strong>Fix:</strong> render as an ordered list with arrows decorative (aria-hidden); mark the current step with <code>aria-current="step"</code> and a visible word ("Now: Verifying"); mark completed steps with a visible tick plus hidden "done". Same for the A4 wave strip ("Wave 2: running").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Most of the Accessibility Floor is still an assumption.</h3>
+              <span class="finding-location">EXPERIENCE.md › Accessibility Floor: "[ASSUMPTION] Target WCAG 2.2 AA", "[ASSUMPTION] Tap targets ≥44px", "[ASSUMPTION] Keyboard-operable… announced… 200%"; DESIGN.md button min-height "[ASSUMPTION]"</span>
+            </header>
+            <div class="finding-note">Downstream builders can drop assumptions.</div>
+            <div class="finding-fix"><strong>Fix:</strong> have Amine decide them and remove the tags; add the missing floor items from this review (authentication, live regions, reduced motion, undo, help, zoom).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The console has no zoom or reflow rule beyond tables.</h3>
+              <span class="finding-location">EXPERIENCE.md › Responsive &amp; Platform "Desktop web, wide screens only… No phone layout in v1"; DESIGN.md › Layout "Problem detail puts Verified facts and Nightshift's explanation side by side"; Typography console-column-label 11px uppercase, console-chip and console-mono 12px</span>
+            </header>
+            <div class="finding-note">WCAG 1.4.10 exempts the data tables but not the summary tiles, panels, A2/A3 detail and A4 steps at 400% zoom (1280px → 320 CSS px); 11px uppercase labels are hard going for a tired engineer.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state that non-table console content reflows to one column below ~700 CSS px (A2 blocks stack: facts first), tables keep horizontal scroll with a sticky first column, and the minimum console text is 12px with column labels in sentence case or ≥12px.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Customer chips may not reflow at 200% text on a 360px phone.</h3>
+              <span class="finding-location">EXPERIENCE.md › Accessibility Floor "text scales to 200%" [ASSUMPTION]; DESIGN.md › customer-chip 15px/600; Component Patterns "customer screens prefix the field ('Repair status: Waiting for approval')"; the palette sheet's chip CSS uses <code>white-space: nowrap</code></span>
+            </header>
+            <div class="finding-note">At 30px, "Repair status: Waiting for approval" is wider than the 320px content box, forcing horizontal scroll (1.4.4, 1.4.10).</div>
+            <div class="finding-fix"><strong>Fix:</strong> state that customer chips wrap (no nowrap, min-height not fixed height), buttons grow in height with their label, and IDs and cluster names break; test B3 at 200% text and 1.4.12 text spacing.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Clickable cards and tiles are bounded only by the faint <code>border</code>, against DESIGN.md's own rule.</h3>
+              <span class="finding-location">DESIGN.md › Colors "<code>border</code>… never a control's only outline"; Components › Summary tile <code>1px {colors.border}</code> while EXPERIENCE.md says "Click filters to or opens the matching items"; B1 cluster card and "Needs your decision" card are tappable per IA "Cluster card → B2"</span>
+            </header>
+            <div class="finding-note">Computed: border vs background 1.34:1 light / 1.68:1 dark; surface vs background 1.10:1 in both.</div>
+            <div class="finding-fix"><strong>Fix:</strong> give every clickable card or tile either a <code>text-secondary</code> outline or an explicit affordance in <code>primary</code> text ("Review ›", "Open ›") that names the action; the outline is simplest and consistent with the rule.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Last-known values on a stale panel fail AA in dark mode.</h3>
+              <span class="finding-location">DESIGN.md › Components › Freshness line "text-secondary, on every panel and card", Stale panel "stale hatch… Does not hide the last known values" in EXPERIENCE.md › Component Patterns › Stale panel</span>
+            </header>
+            <div class="finding-note">Computed <code>text-secondary-dark</code> <code>#A3A9B3</code> on <code>stale-hatch-stripe-dark</code> <code>#3E4248</code> = <strong>4.28:1</strong> (&lt; 4.5). Light passes (5.19:1).</div>
+            <div class="finding-fix"><strong>Fix:</strong> on stale surfaces use <code>neutral-ink</code> (5.64:1 on the dark stripe) for all text including the freshness line, or lighten the dark stripe to ≤ <code>#383B41</code>, and say so in the Stale panel component.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Several interactive states have no tokens</h3>
+              <span class="finding-location">DESIGN.md frontmatter <code>colors</code> and › Components; EXPERIENCE.md uses inline links "Ticked in your settings on 12 Oct", "See full activity", "Read the policy", and an error state "Decision not recorded"</span>
+            </header>
+            <div class="finding-note">Several interactive states have no tokens: links, error messages, disabled, checked tick/radio fill, selected/hover row. Without a link style, links in body text may be colour-only (1.4.1) or invisible; without an error style, the one error that matters most is undesigned.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add <code>link</code> (= <code>primary</code>, always underlined in body text), <code>error</code> (reuse critical ink/fill with an icon and the word "Not recorded"), <code>checked</code> (<code>primary</code> fill, <code>primary-ink</code> mark, ≥3:1), and a selected-row treatment that isn't colour-only (left bar + <code>aria-selected</code>).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The 100-tile health grid has no keyboard, screen-reader or target-size spec, and two tile states lack a visual.</h3>
+              <span class="finding-location">DESIGN.md › Health-grid tile; EXPERIENCE.md › Health-grid tile "[ASSUMPTION] Clicking a tile with a problem opens its A2", tile "Heartbeat OK · Fleet reports not permitted"</span>
+            </header>
+            <div class="finding-note">100 tab stops is unusable; tiles named only "C" or "W" are meaningless to a screen reader; the "Fleet reports not permitted" tile has no token at all, and the stale tile has no letter (hatch alone at tile size is easy to miss).</div>
+            <div class="finding-fix"><strong>Fix:</strong> one tab stop with arrow-key navigation (grid pattern) or a "Show as list" toggle; accessible name per tile ("shop-eu-1: critical problem; opens problem"); tiles ≥24×24 CSS px (2.5.8); give stale tiles a letter ("?") and define the fleet-reports-off tile (e.g. surface with dashed <code>text-secondary</code> outline and "F").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Focus and announcements after a decision or a failed decision are unspecified.</h3>
+              <span class="finding-location">EXPERIENCE.md › Component Patterns › Primary button "the next screen confirms the result"; State Patterns › "Decision not recorded… offers to try again" [ASSUMPTION]</span>
+            </header>
+            <div class="finding-note">Screen-reader users won't know the decision landed or failed (4.1.3, 2.4.3).</div>
+            <div class="finding-fix"><strong>Fix:</strong> after a decision, move focus to the result heading ("You approved at 02:14"); on failure, keep the request, show the error next to the buttons with role=alert, keep focus on a "Try again" button, and never show both an error and a success.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">No help or contact route on the customer decision screens.</h3>
+              <span class="finding-location">EXPERIENCE.md › Information Architecture › B3, B3-M; Component Patterns › Approval card order</span>
+            </header>
+            <div class="finding-note">A non-expert unsure at 3 AM has no way to ask Orvex; WCAG 2.2 3.2.6 (Consistent Help) requires any help mechanism to sit in the same place across pages.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a fixed "Talk to Orvex on-call" (phone/chat) entry in the same position on B1–B5, and on B3/B3-M next to the "If you don't answer" section.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Console table semantics are unspecified.</h3>
+              <span class="finding-location">EXPERIENCE.md › A1 attention queue columns and sort; A5 "Filterable table… Dropdown filters"; Component Patterns "Click opens A2"</span>
+            </header>
+            <div class="finding-note">Whole-row click handlers are not keyboard- or screen-reader-reachable; sort order and filter results aren't announced; the A2 header chips ("Critical", "Needs attention") lack the field name the customer view adds.</div>
+            <div class="finding-fix"><strong>Fix:</strong> real <code>&lt;table&gt;</code> with <code>&lt;caption&gt;</code> and <code>&lt;th scope&gt;</code>; the "Customer impact" cell is the row's link; <code>aria-sort</code> on the sorted column and a visible "Sorted by customer impact, then time to impact"; announce filter results ("12 rows"); visually hidden field prefixes on chips outside table cells.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The focus ring is the same colour as the primary button.</h3>
+              <span class="finding-location">DESIGN.md › Colors <code>focus-ring</code> = <code>primary</code> <code>#2B59C3</code>; dark <code>#8AB0FF</code> vs <code>#6E9BF5</code></span>
+            </header>
+            <div class="finding-note">Computed ring vs button fill 1.00:1 light, 1.27:1 dark: visibility depends entirely on the 2px offset gap; any container that clips the outline (overflow hidden, edge of a card) makes the focused primary button look unchanged.</div>
+            <div class="finding-fix"><strong>Fix:</strong> use a two-tone ring (2px <code>surface</code> inner + 3px <code>focus-ring</code> outer, e.g. box-shadow) or <code>text-primary</code> for focus on primary-filled controls; state "outlines are never clipped".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Hatching is too faint on rows and too busy behind text.</h3>
+              <span class="finding-location">DESIGN.md › stale row hatch, stale hatch; memlog L10 "stale states must be obvious"</span>
+            </header>
+            <div class="finding-note">Computed stripe vs base: row hatch 1.16:1 / 1.20:1, chip/panel hatch 1.24:1 / 1.37:1, so the row hatch is nearly invisible on many monitors (the chip and words carry it, so no WCAG failure), while a full 5px diagonal pattern under the stale panel's sentence hurts reading for low-vision and dyslexic users.</div>
+            <div class="finding-fix"><strong>Fix:</strong> put the hatch on a left band or header strip and set the text on a solid <code>neutral-fill</code> plate; add the stale left bar in <code>neutral-line</code> to rows.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Times lack a time zone and use mixed formats.</h3>
+              <span class="finding-location">EXPERIENCE.md › Exact labels "Valid until 02:44", "Asked 02:13"; UJ-4 "2:25 AM"; Manual "tonight 01:00–03:00"</span>
+            </header>
+            <div class="finding-note">A customer in a different zone from Orvex or the cluster can't tell when an approval runs out. On WCAG 2.2.1: approval validity limits a decision already given, not the user's time to act (unanswered requests never expire), so 2.2.1 doesn't apply; the manual window is an essential real-world constraint.</div>
+            <div class="finding-fix"><strong>Fix:</strong> show times in the viewer's zone with the zone on decision screens ("Valid until 02:44 (your time, CET)"), one format per audience, and machine-readable <code>&lt;time&gt;</code>.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Motion is not addressed.</h3>
+              <span class="finding-location">DESIGN.md has no motion section; EXPERIENCE.md › Live data, Progress steps</span>
+            </header>
+            <div class="finding-note">Implementers may add pulsing Critical chips, spinners or auto-scroll.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a rule: no flashing or pulsing status; transitions ≤200 ms and none under <code>prefers-reduced-motion</code>; no auto-scroll on new rows; "Nightshift is checking" uses text and a static or reduced-motion-safe indicator.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Adversarial review</h2>
+          <span class="reviewer-source">review-adversarial.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Reviewed 2026-11-03 against <code>.memlog.md</code> (later entries win), <code>.working/open-items-2026-11-03.md</code>, PRD <code>prd.md</code> (FR-11–FR-16, FR-20–FR-24, FR-27, FR-28, FR-32, FR-34, FR-47, FR-50–FR-52, PRIV-2–PRIV-9, SEC-1, SEC-7) and <code>addendum.md</code> ("Approval surface"). Pending PRD changes (open-items section 2) and the corrected FR-51 are taken as decided. Items marked [OPEN: architecture] are only raised where the UX behaviour around them is itself unsafe.</p>
+            <p><strong>Not ready to hand off.</strong> The core rules are right and stated clearly: one repair per approval, action and target from structured data, no approval in Slack or by phone, silence never grants permission, never a stale green, facts separate from the explanation. The weak spots are at the edges, where real nights go wrong: evidence that changes while someone is reading, several people deciding on one request, manual work between "approved" and "I've done it", and mode or channel changes while requests are open. In each case a screen can currently imply that something is approved, reviewed, finished or healthy when it isn't. Two findings are critical: an approval can be committed on evidence other than what the person read, and the console's single approve button can merge the two independent approvals into one click by Orvex.</p>
+            <div class="sev-counts"><span class="badge badge-sev-critical">2 critical</span><span class="badge badge-sev-high">14 high</span><span class="badge badge-sev-medium">13 medium</span><span class="badge badge-sev-low">6 low</span></div>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">An approval can be committed on evidence the person didn't read, or on stale evidence.</h3>
+              <span class="finding-location">Interaction Primitives "Live data"; State Patterns › Surface states "Request re-issued", "Decision not recorded"; Approval validity "always shows current evidence"; Authorisation &amp; approvals "tied to the exact … evidence shown"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Cris opens B3 at 02:13 and his phone locks. At 02:20 Nightshift re-issues the request: memory is climbing faster and the replica count has changed. He unlocks at 02:31. Mobile browsers suspend background timers, so the tab still shows the 02:13 render, and he taps <strong>Approve this repair</strong>. Variants: an automatic refresh swaps sections 3–7 just as his thumb lands; "try again" after a network error resends the old decision; Josh approves in A3 while the cluster has been out of date since 02:10. The spines say an approval is tied to the evidence shown, but nothing says the tap carries the version that was on screen. Nothing says what the screen does when that version is out of date, or whether Approve is offered on an out-of-date cluster at all. Only A5 shows "Blocked", afterwards.</div>
+            <div class="finding-fix"><strong>Fix:</strong> give each request version an ID and have the decision carry the version that was rendered. The server refuses a mismatch, and the screen says "This request changed at 02:20 while you were reading. Nothing was approved. Review the new version.", with the changed sections marked. Decision screens never replace sections 1–8 in place; a banner announces new evidence instead. Approve stays unavailable until every section has loaded, and while the cluster is out of date ("You can't approve this now: no data from shop-eu-1 since 02:10"). "Try again" re-reads the request before resending. A second tap never creates a second decision. Add this failure path to UJ-1 and UJ-3.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">In A3 one button can stand for either of two approvals, so the two-key rule can collapse into one click by Orvex.</h3>
+              <span class="finding-location">Information Architecture › A3 "'Approved on behalf of the customer' (delegation)" and the Orvex support row; Voice and Tone › Exact labels "Approval buttons"; Authorisation &amp; approvals table</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> the customer has delegated risky repairs to Orvex support. An unticked risky repair needs both the customer's approval and Orvex technical approval. In the same console, someone with support and engineer rights (or two colleagues side by side) opens A3 and clicks the one <strong>Approve this repair</strong> button. The screen doesn't say which approval the click gives. It could be recorded as both, or as the delegated one followed by a technical one from the same person. "Two different people" is [OPEN: architecture], but a single, undifferentiated button makes the unsafe result the easy one.</div>
+            <div class="finding-fix"><strong>Fix:</strong> separate actions labelled with the role they exercise: <strong>Give Orvex technical approval</strong> and <strong>Approve on Customer C-0142's behalf (delegated)</strong>. Never offer both to the same person on the same request. Afterwards A3 says "You gave Orvex technical approval at 02:14. The customer's approval must come from someone else." "Approvals still required" names each approval and its person, and the history keeps them as two rows.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">A manual repair has no "work started" state, so nobody (and no automatic repair) knows a person is working on the target.</h3>
+              <span class="finding-location">Component Patterns › Progress steps "Manual repair needed → Verifying"; Key Flows › Flow 7 steps 5–6</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> at 01:10 Marc runs the pre-start check and starts moving traffic to the standby interface. Cris and Josh still see violet "Manual repair needed", which reads as waiting. A ticked safe repair or a policy repair on node n-7 fires halfway through Marc's work, because the repair coordinator (FR-29) doesn't know a person holds the target. In B4 Cris sees "waiting" and assumes nobody has started.</div>
+            <div class="finding-fix"><strong>Fix:</strong> after a passing pre-start check, the performer presses <strong>I'm starting now</strong>. This records the start, registers the target with the coordinator and holds conflicting automatic repairs on that target. Status: "Manual repair in progress: Marc started 01:10". <strong>I've done it: check now</strong> appears only after a start.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">A window that ends mid-work, and a pre-start check that fails or can't decide, are not designed.</h3>
+              <span class="finding-location">State Patterns › Approval validity "Manual repairs"; Surface states "Manual repair, outside the window"; Flow 7 failure line</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Marc starts at 02:50 and the work runs to 03:15. At 03:00 "outside it they are asked again" fires, so Cris is called at 03:00 to re-approve work that is already half-done, or <strong>I've done it</strong> is refused. Separately, the pre-start check fails, or can't run because the cluster is out of date. Nothing stops a person from carrying on, and the spines only say "he doesn't start [ASSUMPTION]".</div>
+            <div class="finding-fix"><strong>Fix:</strong> the window governs the start. Work that started inside it may finish; an overrun shows "Running past the approved window (ended 03:00)" and is reported to the approvers, without asking them to approve again. The check result gates <strong>I'm starting now</strong>. On Fail or "Can't tell" the screen says "Don't start: the evidence has changed. Your approvals no longer cover this; the approvers are being asked again." The approvals are cancelled and recorded, and any later "done" report is recorded as work done outside approval.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The history states a self-report as fact and makes up a time span.</h3>
+              <span class="finding-location">Key Flows › Flow 7 step 8 "performed by Marc (Orvex) 01:10–01:22 · checked by Nightshift"; State Patterns › Repair status → FR-34 outcome</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Marc presses <strong>I've done it</strong> without doing the steps. The network card recovers on its own, Nightshift's check passes, and B4 and A5 say "performed by Marc 01:10–01:22 · Succeeded" for good. 01:10 was the pre-start check, not the start. A customer looking into a later outage trusts the record.</div>
+            <div class="finding-fix"><strong>Fix:</strong> record only what is known: "Pre-start check passed 01:10 · Marc reported it done at 01:22 · Nightshift's check at 01:25: problem gone". Use FR-34's own words, "manual repair reported done". Show a start time only if a start was recorded (previous finding). Say that the check confirms the symptom is gone, not that the steps were followed.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">"Succeeded" on a workaround hides a hardware fault that is still open.</h3>
+              <span class="finding-location">Key Flows › Flow 7 steps 1 and 7; State Patterns › Incident status; FR-20, FR-52</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Flow 7 ends "the connection is stable on the standby interface: Succeeded", and the incident goes to Resolved (green). The network card is still failing, so nobody replaces it, and next week the standby fails with no spare. The flow also has an Orvex engineer performing what looks like hardware work, while FR-52 gives hardware to the customer or their provider.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add an incident state "Worked around: hardware fault still open", not green, with the next step in words: "Ask your hardware provider to replace the network card on n-7. Here's the evidence to send them." Make Flow 7 explicitly an OMK network-configuration workaround done by Orvex. The fault closes only after the customer reports the hardware fixed and Nightshift has checked (FR-20).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The recovery plan reads as already reviewed when the customer approves, and a review that changes the plan doesn't ask the customer again.</h3>
+              <span class="finding-location">Component Patterns › Manual-repair panel item 8 "Reviewed by Orvex before the work starts"; Key Flows › Flow 7 steps 2–4</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Cris approves at 23:58. At 00:20 Josh's review changes the plan: n-7 must be drained first, so the interruption is longer. Cris approved the old plan and nothing asks him again. At midnight the past tense "Reviewed by Orvex" reads as done.</div>
+            <div class="finding-fix"><strong>Fix:</strong> show the review state literally: "Not reviewed yet: Orvex reviews this before work starts", then "Reviewed by Josh (Orvex) at 00:20". If the review changes the steps, plan, interruption or window, that is a material change (FR-22): the customer's approval is cancelled and they are asked again. Consider asking for Orvex's review before asking the customer.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The "If you don't answer" line hides a last-resort run.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "No answer (customer)"; Component Patterns › Approval card item 9; Authorisation &amp; approvals "Last-resort condition"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Samira ticked the last-resort condition for "Restart the only replica". A request arrives at 02:13 with failure predicted around 02:40. B3 tells her "we keep watching and change nothing that isn't already authorised". She reads that as "nothing will happen" and leaves it for the morning, or means to reject and is too late.</div>
+            <div class="finding-fix"><strong>Fix:</strong> when the last-resort condition covers the repair, item 9 says so: "If nobody answers and checkout is predicted to fail within about 30 minutes, this restart will run on its own (you ticked the last-resort condition on 12 Oct). Reject now if you don't want that." Show the earliest time it could run, and the same in A3.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Customer cards keep healthy words on out-of-date data.</h3>
+              <span class="finding-location">Information Architecture › B1 'impact in words ("Checkout works normally")'; State Patterns › Freshness "Customer card: Out of date · Last updated 02:10"; Component Patterns › Stale panel "Does not hide the last known values"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> the cluster stops reporting at 02:10 just as checkout starts failing. At 02:40 B1 still says "Checkout works normally" in large type, next to a small "Out of date" tag. A non-expert reads the sentence, not the tag. The console replaces impact with "Unknown"; the customer view doesn't.</div>
+            <div class="finding-fix"><strong>Fix:</strong> on an out-of-date card the impact line becomes "We don't know how checkout is doing: no data since 02:10". The last known value moves to a secondary line ("Last known at 02:10: checkout working"). Apply the same rule to B2 and B5 ("still watching").</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Alert-only mode is invisible in the console, and switching mode with requests open is undefined.</h3>
+              <span class="finding-location">State Patterns › Surface states "Alert-only mode"; Authorisation &amp; approvals "Alert-only mode"; Information Architecture › A1–A3</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> at 02:10 the customer switches to alert-only. At 02:14 Josh approves a platform-only repair for that cluster in A3, because nothing on A1, A2 or A3 shows the mode. The executor refuses it (SEC-7), so Josh sees an unexplained "Blocked" or believes the platform is repaired. The other way round: when the customer switches back to approval-enabled, do approvals given before the switch revive? Do requests opened before alert-only still show <strong>Approve</strong>?</div>
+            <div class="finding-fix"><strong>Fix:</strong> show the mode on A1 rows, the A2 header and A3 ("Customer in alert-only mode: Nightshift won't run this. Recommend only."), and don't offer Approve there. On a switch to alert-only, open requests become recommendations and given-but-unused approvals are cancelled, recorded and reported to the approvers. Switching back revives nothing. B6's mode confirmation lists what will happen to the open items, and ticks show "Paused: alert-only mode".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Turning a channel off leaves requests in flight in an undefined state.</h3>
+              <span class="finding-location">Privacy &amp; outbound channels table; State Patterns › Surface states "Portal not permitted"; Key Flows › Flow 6 failure line; Authorisation &amp; approvals "Delegation"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> at 02:16 an administrator unticks portal access. Cris's approval is waiting for Orvex and two requests are open: are they cancelled, kept or merely invisible? Slack still sends "Open in Quornex portal to review" to a portal with nothing to show. With notifications off and delegation on, "You're notified of every approval made on your behalf" can't be honoured. SEC-7's "changes are notified" has no channel either.</div>
+            <div class="finding-fix"><strong>Fix:</strong> before an untick takes effect, show its consequences with counts: "2 open requests will be withdrawn. Cris's approval from 02:14 will be cancelled. Orvex support can no longer approve on your behalf, because you couldn't be told." Notifications offer the portal link only while the portal is permitted. Delegation needs a working notification route and is suspended, in words, without one. State where notices of settings changes go once notifications are off.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Reject commits on one tap and can't be undone for this occurrence.</h3>
+              <span class="finding-location">Component Patterns › Secondary button; Voice and Tone › Exact labels "Reject result"; FR-50</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> at 03:00 Cris scrolls to the end and his thumb lands on the full-width <strong>Reject</strong>. The result screen tells him the repair is blocked and that Nightshift won't ask again unless the problem becomes critical or changes. Checkout fails two hours later and he had no way to say yes in between.</div>
+            <div class="finding-fix"><strong>Fix:</strong> reopening at the person's own request is not automatic resubmission. The Reject result offers "I rejected this by mistake: show me the request again", valid for this occurrence while the evidence still holds, and recorded. Alternatively, add a short confirmation for Reject on phones. Either way, fix the order of the two buttons and keep space between them.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Conflicting decisions by different people are undefined.</h3>
+              <span class="finding-location">Component Patterns › Approval card item 8; Voice and Tone › Exact labels "After Approve" and "Reject result"; Authorisation &amp; approvals "Delegation"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> (a) Cris approves and Josh then rejects. Cris's B3 still says "Waiting for Orvex technical approval", so he goes back to sleep expecting a repair. (b) Orvex support approves on the customer's behalf at 01:03; at 01:05 Cris opens the same request and taps Reject. Which decision wins? (c) Two customer administrators: Samira approves on desktop while Cris rejects on his phone.</div>
+            <div class="finding-fix"><strong>Fix:</strong> every approval screen shows each decision already made, with name and time, and tells everyone who acted: "Josh (Orvex) rejected this at 02:20. The repair won't run." Write the rule down: a rejection by any required approver blocks the repair, and the customer's own rejection overrides a delegated approval that hasn't been used yet. A second person sees the first decision and can't submit a decision based on an older screen (first critical finding).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Delegated approvals hide who gave them.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels History "Approved by Orvex support on your behalf at 01:03"; FR-34 "by whom"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> an Orvex support agent approves a risky restart that causes an outage. The customer's history says only "Orvex support", so they can't tell who it was or challenge it. Ticks are just as anonymous ("Ticked in your settings on 12 Oct").</div>
+            <div class="finding-fix"><strong>Fix:</strong> "Approved on your behalf by Dana K. (Orvex support) at 01:03 · delegation set by Samira on 20 Oct · scope: risky repairs, all clusters". Name the person on ticks too: "Ticked by Samira on 12 Oct".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">AI text can fill the most-read, unlabelled lines.</h3>
+              <span class="finding-location">Component Patterns › Approval card items 1–2 and Explanation block; Information Architecture › B2 "FR-11 message first", B1 "impact in words", Slack "one-sentence risk"; SEC-1</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> a crafted log line steers the model. The lead sentence at the top of B3 says "Routine maintenance, no impact expected", or the B1 card says "Checkout works normally". The rule keeps only action, target and steps out of AI text. The problem sentence, the impact line, the Slack sentence and the B5 summary sentences have no stated source and no label, and they sit above or outside the yellow block.</div>
+            <div class="finding-fix"><strong>Fix:</strong> state the source of every field on B1, B2, B3, B3-M, B5 and the Slack message. Render items 1–2 and the card impact lines from templates over structured fields (impact, time to impact). AI wording appears only inside the labelled yellow block. List the fields that must come from structured data: risk, interruption, recovery plan, validity, approvals still required, What this changes, performer and window.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">The fleet button says "300" but means something else, and the set can change under the click.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "Approve rollback for these 300 clusters"; Key Flows › UJ-5 steps 3–6; State Patterns › Freshness "12 clusters can't be included"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> 300 clusters are affected and "12 can't be included", yet the wave totals add up to 300, and 112 of those still need their customer. Josh reads "these 300" and believes all 300 will roll back. The 12 clusters with Fleet reports off may still be on v2.4, and nobody acts or tells those customers. A cluster that joined the group after he opened A4, or one grouped by mistake, rides on his click, and he can't take one out.</div>
+            <div class="finding-fix"><strong>Fix:</strong> the button names the exact set it covers when rendered, and the click is refused if the set has changed ("3 clusters joined since you opened this. Review them."). Split the summary: "288 clusters in this approval · 112 also need their customer · 12 not included (Fleet reports off): their customers are told separately". Allow excluding a single cluster. In Step 1, list the exceptions (Fail, out of date, no permission) first instead of a 300-row table.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The Orvex-only info card is static and absolute.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "Orvex-only info card"; Component Patterns › Info card; Authorisation &amp; approvals table</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> the card says "Orvex is repairing … No effect on your service expected. No action needed." But the repair is only waiting for Orvex approval, or it fails, or the pre-run check reclassifies it as affecting production (FR-21) and it becomes the customer's request. The card doesn't change. It has no time, status, outcome, link or route to Dispute. In alert-only mode it is simply untrue.</div>
+            <div class="finding-fix"><strong>Fix:</strong> the card carries the repair status, time and freshness, and links to a read-only detail page with "What this changes" and <strong>Dispute</strong>. It turns into a request card when the repair is reclassified and closes into B4 and B5 with its outcome. It is never shown as an ongoing repair while the customer is in alert-only mode.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">"Heartbeat OK" on a tile reads as healthy.</h3>
+              <span class="finding-location">Component Patterns › Health-grid tile; State Patterns › Freshness "Fleet reports off"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> at 3 AM Josh sees "Heartbeat OK" on 12 tiles and moves on. Orvex can't see problems on those clusters, and the grid may count them as "No open problem".</div>
+            <div class="finding-fix"><strong>Fix:</strong> these tiles never show "No open problem". Label them "Agent running · problems not reported to Orvex (customer's choice)", keep them out of the "No open problem" count and use neutral styling.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">"Repairs stopped on this cluster" (FR-28) never shows outside the history row.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "Recovery plan"; Key Flows › UJ-2 failure line</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> after a harmful repair the customer assumes their ticked repairs still protect them. No state on B1 or A1 shows the pause, and no surface or person resumes it.</div>
+            <div class="finding-fix"><strong>Fix:</strong> add a cluster banner on B1, B2 and A1 (tile and queue): "Automatic repairs stopped on shop-eu-1 since 21:40 after a repair made things worse. Ticked repairs won't run until Orvex resumes them." Add a recorded <strong>Resume</strong> action in the console.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The reach of a rejection over the same problem is ambiguous.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "Reject result": "Other automatic repairs keep working", "swap in another repair to get around your decision"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Cris rejects the restart. A ticked safe repair for the same problem (move traffic) then runs, or FR-27 proposes the next repair. Cris either reads "nothing will be done about this" or expects his ticks to stop.</div>
+            <div class="finding-fix"><strong>Fix:</strong> the result names them: "Repairs you've ticked for this problem may still run: Move traffic to a healthy copy (ticked 12 Oct). Nothing else will be tried for this problem without asking you."</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The green "Safe" chip contradicts "green means verified", and the grey "Blocked" chip looks calm.</h3>
+              <span class="finding-location">DESIGN.md › Colors "Rules that carry the meaning"; <code>risk-level-chip.safe</code> → <code>chip-success</code>; <code>repair-status-chip.blocked</code> → neutral</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> on B3 at 3 AM, a green chip beside the repair reads as checked or approved. On a critical problem, a grey "Blocked" chip reads as settled while nothing is being repaired.</div>
+            <div class="finding-fix"><strong>Fix:</strong> give Safe a non-green treatment, keeping green for verified, succeeded and resolved. When a repair is Blocked and its problem is still open, B1, B2 and A1 add "Nothing is being repaired".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">There is no customer-side state for someone who may not approve.</h3>
+              <span class="finding-location">State Patterns › Surface states lists "Not an administrator" for B6 and B6b only; Interaction Primitives "approver roles [OPEN: architecture]"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> a staff member without approval rights follows the Slack link and finds <strong>Approve this repair</strong> on B3. The mechanism is open, but the screen state isn't designed.</div>
+            <div class="finding-fix"><strong>Fix:</strong> define "You can't approve this. Samira or Cris can; we've told them." on B3 and B3-M, without Approve. Send decision notifications only to people who can decide.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The delegation default and the effect of revoking it on approvals in flight are undefined.</h3>
+              <span class="finding-location">Key Flows › Flow 6 step 5; Surface → journey closure gap "Revoke delegation"; Authorisation &amp; approvals "Delegation"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> the channels start ticked at onboarding, so does delegation too? Samira revokes delegation at 01:04, one minute after an on-behalf approval that hasn't run yet: does it still run?</div>
+            <div class="finding-fix"><strong>Fix:</strong> state that delegation starts off. Revoking it cancels any unused on-behalf approvals immediately, with words on screen and in the history. B6 shows the current scope and the last approval given on the customer's behalf.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Sign-in through a Slack deep link teaches people to fall for phishing.</h3>
+              <span class="finding-location">Information Architecture › Slack notification "(signs in)"; Interaction Primitives "Notifications deep-link through sign-in"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> an attacker sends a lookalike "Nightshift proposes a repair that needs your approval. Open in Quornex portal" leading to a credential-harvesting page, and a half-awake owner signs in.</div>
+            <div class="finding-fix"><strong>Fix:</strong> each notification carries a short request code that the portal also shows. Add a line such as "If unsure, open the Quornex portal yourself; the request is waiting there." Keep this tied to A11.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Names an attacker controls, and AI markup, can pass for labels.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "What this changes: your production (checkout on shop-eu-1)"; Key Flows › UJ-1 step 4 "restart checkout-api (its only replica)"; Component Patterns › Explanation block</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> a deployment named <code>checkout-api-approved-by-orvex</code> reads naturally inside a prose sentence. AI text in the yellow block contains its own "Verified facts:" heading or "Orvex has approved this". [OPEN: architecture A6] owns the neutralising mechanism, but the spines put names inside prose.</div>
+            <div class="finding-fix"><strong>Fix:</strong> show identifiers as distinct tokens behind a fixed label ("Target: deployment <code>checkout-api</code>, namespace <code>shop</code>"), truncated and never turned into links. Render AI text as plain text with no headings, links or formatting. The UI, never the text, provides the block titles.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">The manual performer's notices, reassignment and identity are not designed.</h3>
+              <span class="finding-location">Key Flows › Flow 7 step 4 "Ready for Marc"; Open items A8; FR-52 "Who performs it"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> nothing reminds Marc when the window opens, so it lapses and everyone is asked again. If Marc is ill, there is no way to reassign. A hardware provider has no portal identity, so the customer presses <strong>I've done it</strong> for work they didn't do, and the record names them as the performer.</div>
+            <div class="finding-fix"><strong>Fix:</strong> notify the performer when all approvals are in and again when the window opens. Add <strong>Reassign performer</strong>: the approvers are told, and the customer is asked again if the performer's organisation changes. Record "Reported done by Cris (work done by the hardware provider)".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Manual outcomes use three vocabularies and leave gaps.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "Manual repair progress" uses "Problem still there"; Component Patterns › Progress steps uses "Succeeded / Failed"; State Patterns › Repair status → FR-34 outcome; Surface states "next step not recorded"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> the check can't decide because the data is out of date, or the manual work makes things worse. Neither case has a status, an FR-34 outcome or a next step. After "Problem still there" it is unclear whether the approvals are used up.</div>
+            <div class="finding-fix"><strong>Fix:</strong> use one set of words: "Nightshift's check: problem gone / problem still there / can't tell yet (no data since …)". Map each to FR-34. After "still there" the problem stays open, the approvers are told and the next catalogue step is proposed. "Made things worse" follows FR-28.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Changes to settings, mode, delegation and policy acceptance are missing from the history.</h3>
+              <span class="finding-location">Information Architecture › B4, A5; Component Patterns › Settings row "Changes are recorded and notified"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> the customer can't see who turned notifications off or widened delegation. Josh can't see when a customer switched to alert-only.</div>
+            <div class="finding-fix"><strong>Fix:</strong> B4 and A5 include settings events with the person and time: "Notifications turned off by Samira at 22:04".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">For double approvals, neither side sees the other's validity, and only the customer-first order is designed.</h3>
+              <span class="finding-location">State Patterns › Approval validity; Voice and Tone › Exact labels "Approvals still required", "After Approve"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> in A3 Josh doesn't see that Cris's approval runs out in 4 minutes, so it lapses and Cris is woken again. When Orvex approves first, the customer's screen has no wording for an Orvex approval that is already given or about to run out.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "Approvals still required" lists each approval with its state and its own "valid until". A3 shows "Cris's approval runs out at 02:44 (in 12 min)", and the A1 queue ranks by it. Draft wording for the Orvex-first order.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">"Valid until 02:44" overpromises, and repeated re-asks invite rubber-stamping.</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "After Approve"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> a material change cancels the approval at 02:20, although the screen promised 02:44. Being asked again at 03:00 for Orvex's delay teaches people to approve without reading.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "Valid until 02:44, or sooner if the situation changes." Every repeat request opens with what is different since last time.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Wording drift around "Orvex" and "checking".</h3>
+              <span class="finding-location">Voice and Tone › Exact labels "Customer approved; waiting for Orvex review"; Key Flows › UJ-2 step 4 "He is told Orvex is checking it"; "Nightshift is checking"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> "Orvex is checking" tells Cris someone is already looking when nobody has seen it yet, and "review" and "technical approval" read as two different steps.</div>
+            <div class="finding-fix"><strong>Fix:</strong> always say "Waiting for Orvex technical approval". Use "checking" only for Nightshift's verification.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title"><strong>Accept this change</strong> sits beside <strong>Read what changed</strong>.</h3>
+              <span class="finding-location">Privacy &amp; outbound channels › "Agreed management policy"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> an administrator accepts a change that widens permissions without opening it.</div>
+            <div class="finding-fix"><strong>Fix:</strong> put <strong>Accept this change</strong> inside the change detail, below what it widens.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">A3 doesn't show that the tick matches the catalogue version.</h3>
+              <span class="finding-location">Key Flows › UJ-3 step 4</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Josh approves a ticked repair, assuming the 12 Oct tick covers restart-only-replica v3. The executor then blocks it because the tick needs renewing.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "Ticked by Samira on 12 Oct for v3 (current)", or "Tick needs renewing: v4 changed the conditions".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The morning summary flattens who permitted what.</h3>
+              <span class="finding-location">Key Flows › UJ-4 step 3 "Authorised by you. Worked."</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> a risky ticked rollback also had Orvex technical approval, but the summary credits only the customer, which weakens FR-34's "who permitted it".</div>
+            <div class="finding-fix"><strong>Fix:</strong> "Ticked by you on 12 Oct · Orvex technical approval by Josh at 02:20 · Worked."</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">The wording for a withdrawn request isn't drafted, including when the customer's approval was waiting.</h3>
+              <span class="finding-location">State Patterns › Surface states "Request withdrawn"</span>
+            </header>
+            <div class="finding-note"><em>Scenario:</em> Cris approved, the problem went away and the buttons vanished. He can't tell whether his approval was used.</div>
+            <div class="finding-fix"><strong>Fix:</strong> "The problem went away at 02:30. Your approval wasn't used and has been cancelled. Nothing was changed."</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li><strong>Names:</strong> the 16 component names are identical across DESIGN.md › Components, the DESIGN.md frontmatter keys (kebab-case equivalents) and EXPERIENCE.md › Component Patterns. "Focus" is a DESIGN.md › Components entry only, which is correct since it is an interaction primitive in EXPERIENCE.md.</li>
+        <li><strong>Token references:</strong> 62 in DESIGN.md and 10 in EXPERIENCE.md, 0 unresolved. 68 colour tokens, each light token with a <code>-dark</code> twin and none orphaned. Defined but never referenced by <code>{…}</code>: <code>colors.background</code> (used by name in prose), <code>typography.console-title</code>, <code>typography.customer-title</code>, and spacing scale <code>1</code>–<code>8</code>. That is harmless, but the title roles have no component consumer.</li>
+        <li><strong>Hex parity:</strong> every colour value in DESIGN.md matches <code>.working/color-themes-1.html</code> (Graphite Ledger v1 comment block and <code>.t-v1-light</code> / <code>.t-v1-dark</code> variables). The radii 4px (<code>--rc</code>) and 10px (<code>--rk</code>) match; 5px and 8px are derived and marked [ASSUMPTION].</li>
+        <li><strong>Frontmatter:</strong> both spines have <code>status: draft</code>, <code>created</code>, <code>updated</code> and 9 <code>sources</code> that resolve on disk. DESIGN.md has <code>description</code>; EXPERIENCE.md has none, as in the examples. <code>{planning_artifacts}</code> paths are quoted for YAML.</li>
+        <li><strong>Cross-references:</strong> EXPERIENCE.md › IA A5 lists filters in parentheses and then "Columns:", which is ambiguous on first read; label the parenthesised list "Filters:". A3-M's internal numbering (time window as row 9, approvals as row 10) matches the console wireframe.</li>
+        <li><strong>Mermaid:</strong> none in either spine.</li>
+        <li><strong>Visual sources:</strong> links point into <code>.working/</code> (acceptable before Finalize; promote and relink). <code>mockups/</code> and <code>wireframes/</code> don't exist yet, and <code>imports/</code> is empty.</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: /home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/review-rubric.md</span>
+        <span>Accessibility: /home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/review-accessibility.md</span>
+        <span>Adversarial: /home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/review-adversarial.md</span>
+        <span>DESIGN.md: /home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/DESIGN.md</span>
+        <span>EXPERIENCE.md: /home/amine/nightshift/_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/EXPERIENCE.md</span>
+        <span>Generated: 2026-11-03T15:41:02+00:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

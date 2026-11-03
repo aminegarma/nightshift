@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A1 Fleet Overview</title>
+<style>
+/* KEY SCREEN MOCK, illustrative only; the spines win on any conflict.
+   Governing spine sections:
+   - EXPERIENCE.md > Information Architecture > A1 (tiles, queue columns and sort, Alert-only label, grid, Pause live updates)
+   - EXPERIENCE.md > Component Patterns: Attention-queue row, Summary tile, Health-grid tile, Freshness line (pause), Status chips
+   - EXPERIENCE.md > State Patterns > Freshness and cluster connection (Out of date, Fleet reports off, Live updates paused),
+     Surface states (Alert-only mode); Voice and Tone (Freshness, "Out of date: last data 02:10 CET")
+   - EXPERIENCE.md > Key Flows > UJ-3 step 2, UJ-5 step 2
+   - DESIGN.md > Components: Attention-queue row (+ stale), Summary tile, Health-grid tile ("F", "?"), Freshness line
+     (paused label), Freshness chip, Secondary button (console size), Status chips; Colors (stale hatch, dark stripe #383B41);
+     Layout & Spacing (Console); Typography (console-*)
+*/
+
+/* Graphite Ledger (v1) tokens: exact values from DESIGN.md frontmatter (dark stale-hatch stripe #383B41). */
+.t-light{--background:#F3F4F6;--surface:#FFFFFF;--surface-raised:#F9FAFB;--border:#D1D5DB;--text-primary:#111827;--text-secondary:#4B5563;
+ --primary:#2B59C3;--primary-ink:#FFFFFF;--focus-ring:#2B59C3;
+ --critical-fill:#FDE8E8;--critical-ink:#9B1C1C;--critical-line:#9B1C1C;
+ --warning-fill:#FDEBD8;--warning-ink:#8A3B0C;--warning-line:#8A3B0C;
+ --info-fill:#E3ECFB;--info-ink:#1E429F;--info-line:#1E429F;
+ --waiting-fill:#EDE9FB;--waiting-ink:#5B32B4;--waiting-line:#5B32B4;
+ --success-fill:#E1F3E8;--success-ink:#146C3A;--success-line:#146C3A;
+ --explanation-fill:#FCF4CF;--explanation-ink:#6B4E00;--explanation-line:#6B4E00;
+ --neutral-fill:#ECEDEF;--neutral-ink:#444B55;--neutral-line:#444B55;
+ --stale-hatch-base:#ECEDEF;--stale-hatch-stripe:#D4D6D9;--stale-row-base:#FFFFFF;--stale-row-stripe:#EDEEEF;color-scheme:light}
+.t-dark{--background:#16181C;--surface:#1E2126;--surface-raised:#262A30;--border:#3A3F47;--text-primary:#E8EAED;--text-secondary:#A3A9B3;
+ --primary:#6E9BF5;--primary-ink:#0E1420;--focus-ring:#8AB0FF;
+ --critical-fill:#3D1A1C;--critical-ink:#FFA8A8;--critical-line:#FFA8A8;
+ --warning-fill:#3B2614;--warning-ink:#FFC08A;--warning-line:#FFC08A;
+ --info-fill:#182A47;--info-ink:#A9C6FF;--info-line:#A9C6FF;
+ --waiting-fill:#2A2045;--waiting-ink:#CDB8FF;--waiting-line:#CDB8FF;
+ --success-fill:#15301F;--success-ink:#8FE0AE;--success-line:#8FE0AE;
+ --explanation-fill:#3A3112;--explanation-ink:#F2D675;--explanation-line:#F2D675;
+ --neutral-fill:#2A2D33;--neutral-ink:#BCC2CB;--neutral-line:#BCC2CB;
+ --stale-hatch-base:#2A2D33;--stale-hatch-stripe:#383B41;--stale-row-base:#1E2126;--stale-row-stripe:#2B2F34;color-scheme:dark}
+.t-light,.t-dark{--rc:4px;--rb:5px;--rbtn:8px;--rk:10px}
+/* status roles: fill / ink / line */
+.critical{background:var(--critical-fill);color:var(--critical-ink);--line:var(--critical-line)}
+.warning{background:var(--warning-fill);color:var(--warning-ink);--line:var(--warning-line)}
+.info{background:var(--info-fill);color:var(--info-ink);--line:var(--info-line)}
+.waiting{background:var(--waiting-fill);color:var(--waiting-ink);--line:var(--waiting-line)}
+.success{background:var(--success-fill);color:var(--success-ink);--line:var(--success-line)}
+.explanation{background:var(--explanation-fill);color:var(--explanation-ink);--line:var(--explanation-line)}
+.neutral{background:var(--neutral-fill);color:var(--neutral-ink);--line:var(--neutral-line)}
+.stale{background:repeating-linear-gradient(135deg,var(--stale-hatch-base) 0 5px,var(--stale-hatch-stripe) 5px 10px);color:var(--neutral-ink);--line:var(--neutral-line)}
+
+
+*{box-sizing:border-box}
+:root{--page:#E9EAEC;--page-ink:#15171A;--page-mut:#4A4F57}
+@media (prefers-color-scheme:dark){:root{--page:#0F1012;--page-ink:#ECEDEF;--page-mut:#A2A7AF}}
+body{margin:0;background:var(--page);color:var(--page-ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.45}
+.gallery-head{padding:20px 16px 4px}
+.gallery-head h1{font-size:18px;margin:0 0 4px}
+.gallery-head p{font-size:13px;margin:2px 0;color:var(--page-mut)}
+.modes{display:flex;flex-direction:column;gap:20px;padding:12px 16px 48px;align-items:flex-start}
+.mode{background:var(--background);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:16px}
+.mode-label{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);border:1px solid var(--text-secondary);border-radius:4px;padding:2px 8px;background:var(--surface);margin-bottom:12px}
+.states{display:flex;gap:20px;align-items:flex-start}
+.state-cap{font-size:13px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;max-width:390px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+
+
+.browser{width:1440px;border:1px solid var(--text-secondary);border-radius:10px;overflow:hidden;background:var(--background)}
+.chrome{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;background:var(--surface-raised);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary)}
+.chrome i{width:11px;height:11px;border-radius:50%;border:1px solid var(--text-secondary);display:inline-block}
+.chrome .tab{margin-left:12px;padding:3px 12px;border:1px solid var(--border);border-radius:var(--rc);background:var(--surface);color:var(--text-primary)}
+.console{font-size:13px;line-height:20px;color:var(--text-primary)}
+.topnav{display:flex;align-items:center;gap:24px;height:44px;padding:0 16px;background:var(--surface-raised);border-bottom:1px solid var(--border)}
+.topnav .brand{font-weight:700}
+.topnav nav{display:flex;gap:18px;height:100%}
+.topnav nav a{display:flex;align-items:center;color:var(--text-secondary);text-decoration:none;border-bottom:2px solid transparent}
+.topnav nav a[aria-current]{color:var(--text-primary);font-weight:600;border-bottom-color:var(--text-primary)}
+.topnav .who{margin-left:auto;color:var(--text-secondary)}
+.cbody{padding:16px}
+.titlerow{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.title{font-size:16px;font-weight:600;line-height:1.3;margin:0}
+.titlerow .fresh{margin-left:auto}
+.cbtn{font-family:inherit;font-size:13px;line-height:20px;min-height:32px;padding:5px 12px;border-radius:var(--rbtn);background:transparent;color:var(--text-primary);border:1.5px solid var(--text-secondary);cursor:pointer}
+.mut{color:var(--text-secondary)}
+.chip{display:inline-block;padding:0 7px;border-radius:var(--rc);font-size:12px;font-weight:600;line-height:20px;white-space:nowrap;border:1px solid var(--line)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.tile-s{display:block;background:var(--surface);border:1px solid var(--text-secondary);border-radius:var(--rk);padding:10px 12px;color:var(--text-primary);text-decoration:none}
+.tile-s.crit{background:var(--critical-fill);border-color:var(--critical-line)}
+.tile-s .lab{font-weight:600}
+.tile-s .n{font-size:32px;font-weight:700;line-height:1.15;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.tile-s.crit .n{color:var(--critical-ink)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rk);overflow:hidden;margin-top:8px}
+.pbar{display:flex;gap:12px;align-items:center;padding:6px 10px;background:var(--surface-raised);border-bottom:1px solid var(--border)}
+.pbar .ptitle{font-size:16px;font-weight:600;line-height:1.3}
+.pbar .right{margin-left:auto}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:1.4;color:var(--text-secondary);background:var(--surface-raised);text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:4px 8px;border-bottom:1px solid var(--border);vertical-align:middle;line-height:20px}
+tbody tr:last-child td{border-bottom:0}
+td.imp{font-weight:600;width:270px}
+td.imp a{color:inherit;text-decoration:none}
+td.appr{width:230px}
+td.cust .chip{margin-left:6px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;white-space:nowrap}
+td.cl{white-space:nowrap}
+tr.stale-row{background:repeating-linear-gradient(135deg,var(--stale-row-base) 0 6px,var(--stale-row-stripe) 6px 12px)}
+/* health grid */
+.gsel{font:inherit;color:var(--text-primary);background:var(--surface);border:1.5px solid var(--text-secondary);border-radius:var(--rc);padding:1px 10px;cursor:pointer}
+.gwrap{padding:12px}
+.gridbox{position:relative;width:1060px;min-height:410px}
+.hgrid{display:grid;grid-template-columns:repeat(10,48px);grid-auto-rows:28px;gap:6px}
+/* :where() keeps the base tile below the status role classes */
+:where(.ht),:where(.sw){border-radius:var(--rc);border:1px solid var(--text-secondary);background:var(--surface);color:var(--text-primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.sw{flex:none;width:36px;height:22px}
+.ht.critical,.ht.warning,.sw.critical,.sw.warning{border-color:var(--line)}
+.ht.stale,.sw.stale{border-color:var(--neutral-line)}
+.ht.fr,.sw.fr{border:1px dashed var(--text-secondary)}
+.callout{position:absolute;left:560px;width:490px;font-size:13px;line-height:18px;margin:0}
+.cline{position:absolute;height:0;border-top:1px solid var(--text-secondary)}
+.legend h3{font-size:13px;font-weight:600;margin:0 0 8px}
+.legend ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:auto auto;gap:8px 24px}
+.legend li{display:flex;gap:8px;align-items:flex-start}
+/* paused variant strip */
+.variant{width:1440px;margin-top:16px}
+.variant .state-cap{max-width:none}
+.variant .strip{background:var(--surface);border:1px solid var(--text-secondary);border-radius:var(--rk);padding:10px 16px}
+.variant .titlerow{margin:0}
+
+</style></head>
+<body>
+<header class="gallery-head"><h1>A1 Fleet Overview</h1><p>Orvex console home at 1440 px: summary tiles, attention queue, cluster health grid, with the paused-updates variant.</p><p>Graphite Ledger, light and dark. Static mock: no scripts, system fonts. Names, times and IDs are placeholders.</p></header>
+<main class="modes">
+<section class="mode t-light" aria-label="Light mode"><div class="mode-label">Light mode</div><div class="browser"><div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span class="tab">Nightshift &middot; Orvex console</span></div>
+<div class="console">
+<header class="topnav"><span class="brand">Nightshift &middot; Orvex console</span><nav><a href="#" aria-current="page">Fleet overview</a><a href="#">Action history</a></nav><span class="who">Signed in: Josh (Nightshift engineer on duty)</span></header>
+<div class="cbody">
+<div class="titlerow"><h1 class="title">Fleet overview</h1><span class="fresh mut">Updated 40 s ago</span><button class="cbtn" type="button">Pause live updates</button></div>
+<div class="tiles">
+<a class="tile-s" href="#"><div class="lab">Approvals waiting for Orvex</div><div class="n">4</div><div>Oldest wait: 12 min</div><div class="mut">Updated 40 s ago</div></a>
+<a class="tile-s crit" href="#"><div class="lab">Critical problems</div><div class="n">3</div><div>All need attention</div><div class="mut">Updated 40 s ago</div></a>
+<a class="tile-s" href="#"><div class="lab">Fleet-wide problems</div><div class="n">1</div><div>Same problem on 300 clusters</div><div class="mut">Updated 40 s ago</div></a>
+<a class="tile-s" href="#"><div class="lab">Clusters with no data or stale data</div><div class="n">3</div><div>Oldest: no data since 02:10 CET</div><div class="mut">Updated 40 s ago</div></a>
+</div>
+<section class="panel"><div class="pbar"><span class="ptitle">Attention queue</span><span class="mut">sorted by customer impact, then time to impact</span><span class="right mut">Updated 40 s ago</span></div>
+<table><thead><tr><th>Customer impact</th><th>Severity</th><th>Customer</th><th>Cluster(s)</th><th>Incident status</th><th>Time to impact</th><th>Approvals still needed</th><th>Updated</th></tr></thead>
+<tbody>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--critical-line)"><a href="#">Checkout may stop for all shoppers</a></td><td><span class="chip critical">Critical</span></td><td class="cust"><span class="mono">Customer C-0142</span></td><td class="mono">shop-eu-1</td><td><span class="chip warning">Needs attention</span></td><td>About 40 min</td><td class="appr">Orvex technical approval</td><td class="mut">40 s ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--critical-line)"><a href="#">Correlated update failure on 300 clusters</a></td><td><span class="chip critical">Critical</span></td><td class="cust">300 customers</td><td class="cl">300 clusters</td><td><span class="chip warning">Needs attention</span></td><td>About 1 h</td><td class="appr">Orvex technical approval + each customer's permission</td><td class="mut">1 min ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--critical-line)"><a href="#">Node n-7 network card failing; checkout at risk</a></td><td><span class="chip critical">Critical</span></td><td class="cust"><span class="mono">Customer C-0450</span></td><td class="mono">shop-us-2</td><td><span class="chip warning">Needs attention</span></td><td>About 1 h</td><td class="appr">Manual repair needed: customer (personally) + Orvex, then a person performs it</td><td class="mut">40 s ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--warning-line)"><a href="#">Search is slower for some shoppers</a></td><td><span class="chip warning">Warning</span></td><td class="cust"><span class="mono">Customer C-0087</span><span class="chip neutral">Alert-only</span></td><td class="mono">retail-us-3</td><td><span class="chip info">Being watched</span></td><td>About 3 h</td><td class="appr mut">None</td><td class="mut">2 min ago</td></tr>
+<tr class="stale-row"><td class="imp" style="box-shadow:inset 3px 0 0 var(--warning-line)"><a href="#">Out of date: last data 02:10 CET</a></td><td><span class="chip warning">Warning</span></td><td class="cust"><span class="mono">Customer C-0205</span></td><td class="mono">eu-2</td><td><span class="chip waiting">Waiting for customer</span></td><td class="mut">Unknown</td><td class="appr">Customer: needed</td><td><span class="chip stale">Out of date (02:10 CET)</span></td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--warning-line)"><a href="#">No customer impact expected: OMK node agent keeps restarting</a></td><td><span class="chip warning">Warning</span></td><td class="cust"><span class="mono">Customer C-0019</span></td><td class="mono">web-eu-4</td><td><span class="chip waiting">Waiting for Orvex</span></td><td>About 2 h</td><td class="appr">Orvex technical approval only (platform repair)</td><td class="mut">1 min ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--info-line)"><a href="#">No customer impact: disk temporary files cleared</a></td><td><span class="chip info">Informational</span></td><td class="cust"><span class="mono">Customer C-0311</span></td><td class="mono">api-ap-2</td><td><span class="chip success">Resolved</span></td><td class="mut">&mdash;</td><td class="appr mut">None</td><td class="mut">5 min ago</td></tr>
+</tbody></table></section>
+<section class="panel"><div class="pbar"><span class="ptitle">Cluster health &mdash; group of 100</span><button class="gsel" type="button">Group: clusters 201&ndash;300 &#9662;</button><span class="mut">Groups of 100 are a viewing option, not a limit on fleet size.</span><span class="right mut">Updated 40 s ago</span></div>
+<div class="gwrap"><div class="gridbox"><div class="hgrid" aria-label="Clusters 201 to 300"><div class="ht" title="Cluster 201: No open problem"></div><div class="ht" title="Cluster 202: No open problem"></div><div class="ht" title="Cluster 203: No open problem"></div><div class="ht critical" title="Cluster 204: Critical problem">C</div><div class="ht" title="Cluster 205: No open problem"></div><div class="ht" title="Cluster 206: No open problem"></div><div class="ht" title="Cluster 207: No open problem"></div><div class="ht" title="Cluster 208: No open problem"></div><div class="ht" title="Cluster 209: No open problem"></div><div class="ht" title="Cluster 210: No open problem"></div><div class="ht" title="Cluster 211: No open problem"></div><div class="ht" title="Cluster 212: No open problem"></div><div class="ht" title="Cluster 213: No open problem"></div><div class="ht" title="Cluster 214: No open problem"></div><div class="ht" title="Cluster 215: No open problem"></div><div class="ht" title="Cluster 216: No open problem"></div><div class="ht" title="Cluster 217: No open problem"></div><div class="ht" title="Cluster 218: No open problem"></div><div class="ht" title="Cluster 219: No open problem"></div><div class="ht" title="Cluster 220: No open problem"></div><div class="ht" title="Cluster 221: No open problem"></div><div class="ht" title="Cluster 222: No open problem"></div><div class="ht" title="Cluster 223: No open problem"></div><div class="ht" title="Cluster 224: No open problem"></div><div class="ht" title="Cluster 225: No open problem"></div><div class="ht" title="Cluster 226: No open problem"></div><div class="ht" title="Cluster 227: No open problem"></div><div class="ht warning" title="Cluster 228: Warning">W</div><div class="ht" title="Cluster 229: No open problem"></div><div class="ht fr" title="web-eu-7: Heartbeat OK · Fleet reports not permitted: not included in fleet-wide correlation">F</div><div class="ht" title="Cluster 231: No open problem"></div><div class="ht" title="Cluster 232: No open problem"></div><div class="ht" title="Cluster 233: No open problem"></div><div class="ht" title="Cluster 234: No open problem"></div><div class="ht" title="Cluster 235: No open problem"></div><div class="ht" title="Cluster 236: No open problem"></div><div class="ht" title="Cluster 237: No open problem"></div><div class="ht" title="Cluster 238: No open problem"></div><div class="ht" title="Cluster 239: No open problem"></div><div class="ht" title="Cluster 240: No open problem"></div><div class="ht" title="Cluster 241: No open problem"></div><div class="ht" title="Cluster 242: No open problem"></div><div class="ht" title="Cluster 243: No open problem"></div><div class="ht" title="Cluster 244: No open problem"></div><div class="ht stale" title="Cluster 245: No data / stale">?</div><div class="ht stale" title="eu-2: No data since 02:10 CET. What you see may be out of date.">?</div><div class="ht" title="Cluster 247: No open problem"></div><div class="ht" title="Cluster 248: No open problem"></div><div class="ht" title="Cluster 249: No open problem"></div><div class="ht" title="Cluster 250: No open problem"></div><div class="ht" title="Cluster 251: No open problem"></div><div class="ht warning" title="Cluster 252: Warning">W</div><div class="ht" title="Cluster 253: No open problem"></div><div class="ht" title="Cluster 254: No open problem"></div><div class="ht" title="Cluster 255: No open problem"></div><div class="ht" title="Cluster 256: No open problem"></div><div class="ht" title="Cluster 257: No open problem"></div><div class="ht" title="Cluster 258: No open problem"></div><div class="ht" title="Cluster 259: No open problem"></div><div class="ht" title="Cluster 260: No open problem"></div><div class="ht" title="Cluster 261: No open problem"></div><div class="ht" title="Cluster 262: No open problem"></div><div class="ht" title="Cluster 263: No open problem"></div><div class="ht" title="Cluster 264: No open problem"></div><div class="ht" title="Cluster 265: No open problem"></div><div class="ht" title="Cluster 266: No open problem"></div><div class="ht" title="Cluster 267: No open problem"></div><div class="ht" title="Cluster 268: No open problem"></div><div class="ht" title="Cluster 269: No open problem"></div><div class="ht" title="Cluster 270: No open problem"></div><div class="ht" title="Cluster 271: No open problem"></div><div class="ht" title="Cluster 272: No open problem"></div><div class="ht" title="Cluster 273: No open problem"></div><div class="ht" title="Cluster 274: No open problem"></div><div class="ht" title="Cluster 275: No open problem"></div><div class="ht" title="Cluster 276: No open problem"></div><div class="ht" title="Cluster 277: No open problem"></div><div class="ht" title="Cluster 278: No open problem"></div><div class="ht critical" title="Cluster 279: Critical problem">C</div><div class="ht" title="Cluster 280: No open problem"></div><div class="ht" title="Cluster 281: No open problem"></div><div class="ht" title="Cluster 282: No open problem"></div><div class="ht stale" title="Cluster 283: No data / stale">?</div><div class="ht" title="Cluster 284: No open problem"></div><div class="ht" title="Cluster 285: No open problem"></div><div class="ht" title="Cluster 286: No open problem"></div><div class="ht" title="Cluster 287: No open problem"></div><div class="ht" title="Cluster 288: No open problem"></div><div class="ht" title="Cluster 289: No open problem"></div><div class="ht" title="Cluster 290: No open problem"></div><div class="ht" title="Cluster 291: No open problem"></div><div class="ht" title="Cluster 292: No open problem"></div><div class="ht" title="Cluster 293: No open problem"></div><div class="ht" title="Cluster 294: No open problem"></div><div class="ht" title="Cluster 295: No open problem"></div><div class="ht" title="Cluster 296: No open problem"></div><div class="ht" title="Cluster 297: No open problem"></div><div class="ht" title="Cluster 298: No open problem"></div><div class="ht" title="Cluster 299: No open problem"></div><div class="ht" title="Cluster 300: No open problem"></div></div><span class="cline" style="left:534px;top:82px;width:22px"></span><p class="callout" style="top:64px">web-eu-7: Heartbeat OK &middot; Fleet reports not permitted:<br>not included in fleet-wide correlation.</p><span class="cline" style="left:294px;top:167px;width:262px"></span><span class="cline" style="left:294px;top:164px;width:0;height:3px;border-top:0;border-left:1px solid var(--text-secondary)"></span><p class="callout" style="top:149px">eu-2: No data since 02:10 CET.<br>What you see may be out of date.</p><div class="legend callout" style="top:216px"><h3>Legend (colour is never the only signal):</h3><ul>
+<li><span class="sw critical">C</span>Critical problem</li><li><span class="sw warning">W</span>Warning</li>
+<li><span class="sw"></span>No open problem</li><li><span class="sw stale">?</span>No data / stale</li>
+<li style="grid-column:1 / -1"><span class="sw fr">F</span>Heartbeat OK &middot; Fleet reports not permitted: not included in fleet-wide correlation</li></ul>
+<p class="mut" style="margin:12px 0 0">Updated 40 s ago</p></div></div></div></section>
+</div></div></div>
+<div class="variant"><p class="state-cap">Variant: live updates paused (same title row; the rest of the screen stops changing)</p>
+<div class="strip console"><div class="titlerow"><h2 class="title">Fleet overview</h2><span class="fresh"><span class="chip neutral">Live updates paused</span></span><span class="mut">Live updates paused at 02:14 CET. Safety checks keep running on the server.</span><button class="cbtn" type="button">Resume live updates</button></div></div></div></section>
+<section class="mode t-dark" aria-label="Dark mode"><div class="mode-label">Dark mode</div><div class="browser"><div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span class="tab">Nightshift &middot; Orvex console</span></div>
+<div class="console">
+<header class="topnav"><span class="brand">Nightshift &middot; Orvex console</span><nav><a href="#" aria-current="page">Fleet overview</a><a href="#">Action history</a></nav><span class="who">Signed in: Josh (Nightshift engineer on duty)</span></header>
+<div class="cbody">
+<div class="titlerow"><h1 class="title">Fleet overview</h1><span class="fresh mut">Updated 40 s ago</span><button class="cbtn" type="button">Pause live updates</button></div>
+<div class="tiles">
+<a class="tile-s" href="#"><div class="lab">Approvals waiting for Orvex</div><div class="n">4</div><div>Oldest wait: 12 min</div><div class="mut">Updated 40 s ago</div></a>
+<a class="tile-s crit" href="#"><div class="lab">Critical problems</div><div class="n">3</div><div>All need attention</div><div class="mut">Updated 40 s ago</div></a>
+<a class="tile-s" href="#"><div class="lab">Fleet-wide problems</div><div class="n">1</div><div>Same problem on 300 clusters</div><div class="mut">Updated 40 s ago</div></a>
+<a class="tile-s" href="#"><div class="lab">Clusters with no data or stale data</div><div class="n">3</div><div>Oldest: no data since 02:10 CET</div><div class="mut">Updated 40 s ago</div></a>
+</div>
+<section class="panel"><div class="pbar"><span class="ptitle">Attention queue</span><span class="mut">sorted by customer impact, then time to impact</span><span class="right mut">Updated 40 s ago</span></div>
+<table><thead><tr><th>Customer impact</th><th>Severity</th><th>Customer</th><th>Cluster(s)</th><th>Incident status</th><th>Time to impact</th><th>Approvals still needed</th><th>Updated</th></tr></thead>
+<tbody>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--critical-line)"><a href="#">Checkout may stop for all shoppers</a></td><td><span class="chip critical">Critical</span></td><td class="cust"><span class="mono">Customer C-0142</span></td><td class="mono">shop-eu-1</td><td><span class="chip warning">Needs attention</span></td><td>About 40 min</td><td class="appr">Orvex technical approval</td><td class="mut">40 s ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--critical-line)"><a href="#">Correlated update failure on 300 clusters</a></td><td><span class="chip critical">Critical</span></td><td class="cust">300 customers</td><td class="cl">300 clusters</td><td><span class="chip warning">Needs attention</span></td><td>About 1 h</td><td class="appr">Orvex technical approval + each customer's permission</td><td class="mut">1 min ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--critical-line)"><a href="#">Node n-7 network card failing; checkout at risk</a></td><td><span class="chip critical">Critical</span></td><td class="cust"><span class="mono">Customer C-0450</span></td><td class="mono">shop-us-2</td><td><span class="chip warning">Needs attention</span></td><td>About 1 h</td><td class="appr">Manual repair needed: customer (personally) + Orvex, then a person performs it</td><td class="mut">40 s ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--warning-line)"><a href="#">Search is slower for some shoppers</a></td><td><span class="chip warning">Warning</span></td><td class="cust"><span class="mono">Customer C-0087</span><span class="chip neutral">Alert-only</span></td><td class="mono">retail-us-3</td><td><span class="chip info">Being watched</span></td><td>About 3 h</td><td class="appr mut">None</td><td class="mut">2 min ago</td></tr>
+<tr class="stale-row"><td class="imp" style="box-shadow:inset 3px 0 0 var(--warning-line)"><a href="#">Out of date: last data 02:10 CET</a></td><td><span class="chip warning">Warning</span></td><td class="cust"><span class="mono">Customer C-0205</span></td><td class="mono">eu-2</td><td><span class="chip waiting">Waiting for customer</span></td><td class="mut">Unknown</td><td class="appr">Customer: needed</td><td><span class="chip stale">Out of date (02:10 CET)</span></td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--warning-line)"><a href="#">No customer impact expected: OMK node agent keeps restarting</a></td><td><span class="chip warning">Warning</span></td><td class="cust"><span class="mono">Customer C-0019</span></td><td class="mono">web-eu-4</td><td><span class="chip waiting">Waiting for Orvex</span></td><td>About 2 h</td><td class="appr">Orvex technical approval only (platform repair)</td><td class="mut">1 min ago</td></tr>
+<tr class=""><td class="imp" style="box-shadow:inset 3px 0 0 var(--info-line)"><a href="#">No customer impact: disk temporary files cleared</a></td><td><span class="chip info">Informational</span></td><td class="cust"><span class="mono">Customer C-0311</span></td><td class="mono">api-ap-2</td><td><span class="chip success">Resolved</span></td><td class="mut">&mdash;</td><td class="appr mut">None</td><td class="mut">5 min ago</td></tr>
+</tbody></table></section>
+<section class="panel"><div class="pbar"><span class="ptitle">Cluster health &mdash; group of 100</span><button class="gsel" type="button">Group: clusters 201&ndash;300 &#9662;</button><span class="mut">Groups of 100 are a viewing option, not a limit on fleet size.</span><span class="right mut">Updated 40 s ago</span></div>
+<div class="gwrap"><div class="gridbox"><div class="hgrid" aria-label="Clusters 201 to 300"><div class="ht" title="Cluster 201: No open problem"></div><div class="ht" title="Cluster 202: No open problem"></div><div class="ht" title="Cluster 203: No open problem"></div><div class="ht critical" title="Cluster 204: Critical problem">C</div><div class="ht" title="Cluster 205: No open problem"></div><div class="ht" title="Cluster 206: No open problem"></div><div class="ht" title="Cluster 207: No open problem"></div><div class="ht" title="Cluster 208: No open problem"></div><div class="ht" title="Cluster 209: No open problem"></div><div class="ht" title="Cluster 210: No open problem"></div><div class="ht" title="Cluster 211: No open problem"></div><div class="ht" title="Cluster 212: No open problem"></div><div class="ht" title="Cluster 213: No open problem"></div><div class="ht" title="Cluster 214: No open problem"></div><div class="ht" title="Cluster 215: No open problem"></div><div class="ht" title="Cluster 216: No open problem"></div><div class="ht" title="Cluster 217: No open problem"></div><div class="ht" title="Cluster 218: No open problem"></div><div class="ht" title="Cluster 219: No open problem"></div><div class="ht" title="Cluster 220: No open problem"></div><div class="ht" title="Cluster 221: No open problem"></div><div class="ht" title="Cluster 222: No open problem"></div><div class="ht" title="Cluster 223: No open problem"></div><div class="ht" title="Cluster 224: No open problem"></div><div class="ht" title="Cluster 225: No open problem"></div><div class="ht" title="Cluster 226: No open problem"></div><div class="ht" title="Cluster 227: No open problem"></div><div class="ht warning" title="Cluster 228: Warning">W</div><div class="ht" title="Cluster 229: No open problem"></div><div class="ht fr" title="web-eu-7: Heartbeat OK · Fleet reports not permitted: not included in fleet-wide correlation">F</div><div class="ht" title="Cluster 231: No open problem"></div><div class="ht" title="Cluster 232: No open problem"></div><div class="ht" title="Cluster 233: No open problem"></div><div class="ht" title="Cluster 234: No open problem"></div><div class="ht" title="Cluster 235: No open problem"></div><div class="ht" title="Cluster 236: No open problem"></div><div class="ht" title="Cluster 237: No open problem"></div><div class="ht" title="Cluster 238: No open problem"></div><div class="ht" title="Cluster 239: No open problem"></div><div class="ht" title="Cluster 240: No open problem"></div><div class="ht" title="Cluster 241: No open problem"></div><div class="ht" title="Cluster 242: No open problem"></div><div class="ht" title="Cluster 243: No open problem"></div><div class="ht" title="Cluster 244: No open problem"></div><div class="ht stale" title="Cluster 245: No data / stale">?</div><div class="ht stale" title="eu-2: No data since 02:10 CET. What you see may be out of date.">?</div><div class="ht" title="Cluster 247: No open problem"></div><div class="ht" title="Cluster 248: No open problem"></div><div class="ht" title="Cluster 249: No open problem"></div><div class="ht" title="Cluster 250: No open problem"></div><div class="ht" title="Cluster 251: No open problem"></div><div class="ht warning" title="Cluster 252: Warning">W</div><div class="ht" title="Cluster 253: No open problem"></div><div class="ht" title="Cluster 254: No open problem"></div><div class="ht" title="Cluster 255: No open problem"></div><div class="ht" title="Cluster 256: No open problem"></div><div class="ht" title="Cluster 257: No open problem"></div><div class="ht" title="Cluster 258: No open problem"></div><div class="ht" title="Cluster 259: No open problem"></div><div class="ht" title="Cluster 260: No open problem"></div><div class="ht" title="Cluster 261: No open problem"></div><div class="ht" title="Cluster 262: No open problem"></div><div class="ht" title="Cluster 263: No open problem"></div><div class="ht" title="Cluster 264: No open problem"></div><div class="ht" title="Cluster 265: No open problem"></div><div class="ht" title="Cluster 266: No open problem"></div><div class="ht" title="Cluster 267: No open problem"></div><div class="ht" title="Cluster 268: No open problem"></div><div class="ht" title="Cluster 269: No open problem"></div><div class="ht" title="Cluster 270: No open problem"></div><div class="ht" title="Cluster 271: No open problem"></div><div class="ht" title="Cluster 272: No open problem"></div><div class="ht" title="Cluster 273: No open problem"></div><div class="ht" title="Cluster 274: No open problem"></div><div class="ht" title="Cluster 275: No open problem"></div><div class="ht" title="Cluster 276: No open problem"></div><div class="ht" title="Cluster 277: No open problem"></div><div class="ht" title="Cluster 278: No open problem"></div><div class="ht critical" title="Cluster 279: Critical problem">C</div><div class="ht" title="Cluster 280: No open problem"></div><div class="ht" title="Cluster 281: No open problem"></div><div class="ht" title="Cluster 282: No open problem"></div><div class="ht stale" title="Cluster 283: No data / stale">?</div><div class="ht" title="Cluster 284: No open problem"></div><div class="ht" title="Cluster 285: No open problem"></div><div class="ht" title="Cluster 286: No open problem"></div><div class="ht" title="Cluster 287: No open problem"></div><div class="ht" title="Cluster 288: No open problem"></div><div class="ht" title="Cluster 289: No open problem"></div><div class="ht" title="Cluster 290: No open problem"></div><div class="ht" title="Cluster 291: No open problem"></div><div class="ht" title="Cluster 292: No open problem"></div><div class="ht" title="Cluster 293: No open problem"></div><div class="ht" title="Cluster 294: No open problem"></div><div class="ht" title="Cluster 295: No open problem"></div><div class="ht" title="Cluster 296: No open problem"></div><div class="ht" title="Cluster 297: No open problem"></div><div class="ht" title="Cluster 298: No open problem"></div><div class="ht" title="Cluster 299: No open problem"></div><div class="ht" title="Cluster 300: No open problem"></div></div><span class="cline" style="left:534px;top:82px;width:22px"></span><p class="callout" style="top:64px">web-eu-7: Heartbeat OK &middot; Fleet reports not permitted:<br>not included in fleet-wide correlation.</p><span class="cline" style="left:294px;top:167px;width:262px"></span><span class="cline" style="left:294px;top:164px;width:0;height:3px;border-top:0;border-left:1px solid var(--text-secondary)"></span><p class="callout" style="top:149px">eu-2: No data since 02:10 CET.<br>What you see may be out of date.</p><div class="legend callout" style="top:216px"><h3>Legend (colour is never the only signal):</h3><ul>
+<li><span class="sw critical">C</span>Critical problem</li><li><span class="sw warning">W</span>Warning</li>
+<li><span class="sw"></span>No open problem</li><li><span class="sw stale">?</span>No data / stale</li>
+<li style="grid-column:1 / -1"><span class="sw fr">F</span>Heartbeat OK &middot; Fleet reports not permitted: not included in fleet-wide correlation</li></ul>
+<p class="mut" style="margin:12px 0 0">Updated 40 s ago</p></div></div></div></section>
+</div></div></div>
+<div class="variant"><p class="state-cap">Variant: live updates paused (same title row; the rest of the screen stops changing)</p>
+<div class="strip console"><div class="titlerow"><h2 class="title">Fleet overview</h2><span class="fresh"><span class="chip neutral">Live updates paused</span></span><span class="mut">Live updates paused at 02:14 CET. Safety checks keep running on the server.</span><button class="cbtn" type="button">Resume live updates</button></div></div></div></section>
+</main>
+</body></html>

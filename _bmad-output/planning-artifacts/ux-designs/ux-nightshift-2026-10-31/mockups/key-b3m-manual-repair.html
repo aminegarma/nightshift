@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B3-M Manual Repair</title>
+<style>
+/* KEY SCREEN MOCK, illustrative only; the spines win on any conflict.
+   Governing spine sections:
+   - EXPERIENCE.md > Component Patterns: "What we're asking" summary, Manual-repair panel (B3-M order 1-11, Recovery plan
+     collapsible with review state, lifecycle), Confirmation sheet, Progress steps (manual), Status chips, Freshness line
+   - EXPERIENCE.md > Voice and Tone > Exact labels (Manual repair buttons, Manual repair progress, Mitigated (manual, hardware),
+     After manual Approve, Recovery plan (manual: Review needed), No answer (manual), History (manual))
+   - EXPERIENCE.md > State Patterns > Approval validity (manual window, recovery-plan review), Surface states (Manual: Mitigated)
+   - EXPERIENCE.md > Key Flows > Flow 7 steps 2-3 and 7; Authorisation & approvals (Your production x Dangerous)
+   - DESIGN.md > Components: Manual-repair panel, Status chips (repair status incl. Mitigated = warning), "What we're asking",
+     Approval card, Confirmation sheet, Primary/Secondary button, Focus, Progress steps; Colors; Typography (customer-*)
+*/
+
+/* Graphite Ledger (v1) tokens: exact values from DESIGN.md frontmatter (dark stale-hatch stripe #383B41). */
+.t-light{--background:#F3F4F6;--surface:#FFFFFF;--surface-raised:#F9FAFB;--border:#D1D5DB;--text-primary:#111827;--text-secondary:#4B5563;
+ --primary:#2B59C3;--primary-ink:#FFFFFF;--focus-ring:#2B59C3;
+ --critical-fill:#FDE8E8;--critical-ink:#9B1C1C;--critical-line:#9B1C1C;
+ --warning-fill:#FDEBD8;--warning-ink:#8A3B0C;--warning-line:#8A3B0C;
+ --info-fill:#E3ECFB;--info-ink:#1E429F;--info-line:#1E429F;
+ --waiting-fill:#EDE9FB;--waiting-ink:#5B32B4;--waiting-line:#5B32B4;
+ --success-fill:#E1F3E8;--success-ink:#146C3A;--success-line:#146C3A;
+ --explanation-fill:#FCF4CF;--explanation-ink:#6B4E00;--explanation-line:#6B4E00;
+ --neutral-fill:#ECEDEF;--neutral-ink:#444B55;--neutral-line:#444B55;
+ --stale-hatch-base:#ECEDEF;--stale-hatch-stripe:#D4D6D9;--stale-row-base:#FFFFFF;--stale-row-stripe:#EDEEEF;color-scheme:light}
+.t-dark{--background:#16181C;--surface:#1E2126;--surface-raised:#262A30;--border:#3A3F47;--text-primary:#E8EAED;--text-secondary:#A3A9B3;
+ --primary:#6E9BF5;--primary-ink:#0E1420;--focus-ring:#8AB0FF;
+ --critical-fill:#3D1A1C;--critical-ink:#FFA8A8;--critical-line:#FFA8A8;
+ --warning-fill:#3B2614;--warning-ink:#FFC08A;--warning-line:#FFC08A;
+ --info-fill:#182A47;--info-ink:#A9C6FF;--info-line:#A9C6FF;
+ --waiting-fill:#2A2045;--waiting-ink:#CDB8FF;--waiting-line:#CDB8FF;
+ --success-fill:#15301F;--success-ink:#8FE0AE;--success-line:#8FE0AE;
+ --explanation-fill:#3A3112;--explanation-ink:#F2D675;--explanation-line:#F2D675;
+ --neutral-fill:#2A2D33;--neutral-ink:#BCC2CB;--neutral-line:#BCC2CB;
+ --stale-hatch-base:#2A2D33;--stale-hatch-stripe:#383B41;--stale-row-base:#1E2126;--stale-row-stripe:#2B2F34;color-scheme:dark}
+.t-light,.t-dark{--rc:4px;--rb:5px;--rbtn:8px;--rk:10px}
+/* status roles: fill / ink / line */
+.critical{background:var(--critical-fill);color:var(--critical-ink);--line:var(--critical-line)}
+.warning{background:var(--warning-fill);color:var(--warning-ink);--line:var(--warning-line)}
+.info{background:var(--info-fill);color:var(--info-ink);--line:var(--info-line)}
+.waiting{background:var(--waiting-fill);color:var(--waiting-ink);--line:var(--waiting-line)}
+.success{background:var(--success-fill);color:var(--success-ink);--line:var(--success-line)}
+.explanation{background:var(--explanation-fill);color:var(--explanation-ink);--line:var(--explanation-line)}
+.neutral{background:var(--neutral-fill);color:var(--neutral-ink);--line:var(--neutral-line)}
+.stale{background:repeating-linear-gradient(135deg,var(--stale-hatch-base) 0 5px,var(--stale-hatch-stripe) 5px 10px);color:var(--neutral-ink);--line:var(--neutral-line)}
+
+
+*{box-sizing:border-box}
+:root{--page:#E9EAEC;--page-ink:#15171A;--page-mut:#4A4F57}
+@media (prefers-color-scheme:dark){:root{--page:#0F1012;--page-ink:#ECEDEF;--page-mut:#A2A7AF}}
+body{margin:0;background:var(--page);color:var(--page-ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.45}
+.gallery-head{padding:20px 16px 4px}
+.gallery-head h1{font-size:18px;margin:0 0 4px}
+.gallery-head p{font-size:13px;margin:2px 0;color:var(--page-mut)}
+.modes{display:flex;flex-direction:column;gap:20px;padding:12px 16px 48px;align-items:flex-start}
+.mode{background:var(--background);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:16px}
+.mode-label{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);border:1px solid var(--text-secondary);border-radius:4px;padding:2px 8px;background:var(--surface);margin-bottom:12px}
+.states{display:flex;gap:20px;align-items:flex-start}
+.state-cap{font-size:13px;font-weight:600;color:var(--text-secondary);margin:0 0 8px;max-width:390px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+
+
+/* phone frame (device chrome is mock scaffolding, not product UI) */
+.phone{width:390px;border:1px solid var(--text-secondary);border-radius:32px;background:var(--background);overflow:hidden;position:relative}
+.phone.fixed{height:844px}
+.speaker{height:28px;display:flex;align-items:center;justify-content:center;background:var(--surface-raised)}
+.speaker span{width:100px;height:12px;border-radius:6px;background:var(--border)}
+.portal-bar{display:flex;gap:8px;align-items:center;min-height:52px;padding:0 16px;background:var(--surface-raised);border-bottom:1px solid var(--border);font-size:16px}
+.portal-bar a{color:var(--text-primary);text-decoration:underline;text-decoration-color:var(--text-primary);text-underline-offset:3px;white-space:nowrap}
+.portal-bar .ttl{font-weight:600}
+.screen{padding:16px;font-size:16px;line-height:1.55}
+/* approval card */
+.card{background:var(--surface);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--rk);padding:20px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.cchip{display:inline-block;padding:4px 12px;border-radius:var(--rc);font-size:15px;font-weight:600;line-height:1.35;border:1px solid var(--line)}
+.meta{font-size:14px;line-height:1.4;color:var(--text-secondary);margin:12px 0 0}
+/* "What we're asking" summary */
+.ask{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--rb);padding:16px;margin-top:16px}
+.ask h2{font-size:14px;font-weight:700;line-height:1.4;margin:0 0 4px;color:var(--text-primary)}
+.ask p{margin:4px 0 0}
+/* numbered sections */
+.sec{border-top:1px solid var(--border);padding:16px 0;margin:0}
+.ask + .sec{margin-top:16px}
+.sec h2{font-size:14px;font-weight:700;line-height:1.4;color:var(--text-secondary);margin:0 0 6px}
+.sec p{margin:6px 0 0}
+.sec h2 + p{margin-top:0}
+.lead{font-size:18px;font-weight:600;line-height:1.4}
+.action{font-size:17px;font-weight:600;line-height:1.3}
+.changes{font-weight:600}
+.sec .chips + p{margin-top:8px}
+/* plain explanation on tap: dotted text-secondary underline; opens in place below the line */
+.term{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted var(--text-secondary);text-decoration-thickness:1px;text-underline-offset:3px}
+.term-exp{display:block;margin:8px 0 0;padding:2px 0 2px 12px;border-left:2px solid var(--text-secondary);font-size:16px;font-weight:400;line-height:1.55;color:var(--text-primary)}
+/* collapsible sections (Evidence, Recovery plan): native details, closed by default */
+details.sec > summary{list-style:none;cursor:pointer;border-radius:var(--rc)}
+details.sec > summary::-webkit-details-marker{display:none}
+.sumrow{display:flex;align-items:center;gap:8px}
+.sumrow h2{margin:0;flex:1}
+.toggle{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:2px 10px;border:1.5px solid var(--text-secondary);border-radius:var(--rc);font-size:14px;font-weight:600;color:var(--text-primary)}
+.toggle .hide,details[open] .toggle .show{display:none}
+details[open] .toggle .hide{display:inline}
+.closed-line{display:block;margin-top:6px;color:var(--text-primary)}
+details[open] .closed-line{display:none}
+.body{padding-top:8px}
+/* Verified facts / explanation blocks */
+.blk{border-left:4px solid var(--line);border-radius:var(--rb);padding:12px 14px;margin:6px 0 0}
+.blk + .blk{margin-top:16px}
+.bt{font-size:14px;font-weight:700;line-height:1.4}
+.bsub{font-size:14px;line-height:1.4;margin:0 !important}
+.blk ul{margin:6px 0 0;padding-left:20px}
+.blk p{margin:6px 0 0}
+.blk .fresh{color:var(--text-secondary);font-size:14px;line-height:1.4;margin-top:8px}
+/* manual-repair panel */
+.mpanel{background:var(--surface);border:1px solid var(--text-secondary);border-radius:var(--rk);padding:12px 14px;margin-top:4px}
+.mpanel p{margin:0}
+.mpanel ol{margin:8px 0 0;padding-left:22px}
+.mpanel .cap{font-size:14px;line-height:1.4;color:var(--text-secondary);margin-top:8px}
+/* buttons */
+.bp,.bs{display:block;width:100%;min-height:44px;font-family:inherit;font-size:17px;font-weight:600;line-height:1.3;padding:12px 16px;border-radius:var(--rbtn);cursor:pointer;text-align:center}
+.bp{background:var(--primary);color:var(--primary-ink);border:0}
+.bs{background:transparent;color:var(--text-primary);border:1.5px solid var(--text-secondary);margin-top:12px}
+.btns{border-top:1px solid var(--border);padding-top:16px}
+/* confirmation sheet (bottom sheet on a phone) */
+.behind{height:100%;overflow:hidden}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);color:var(--text-primary);border:1px solid var(--text-secondary);border-bottom:0;border-radius:var(--rk) var(--rk) 0 0;padding:20px 20px 28px}
+.sheet .lead{margin:0 0 16px}
+/* after Approve / progress steps */
+.result{font-size:18px;font-weight:600;line-height:1.4;margin:0}
+.after > p{margin:10px 0 0}
+.steps{list-style:none;margin:12px 0 0;padding:0}
+.steps .arrow{color:var(--text-secondary);padding-left:12px;line-height:1.2}
+.steps .future{color:var(--text-secondary)}
+.steps .done{color:var(--text-primary)}
+.steps .done::before{content:'\2713  ';font-weight:700}
+.sub{list-style:none;margin:6px 0 0 4px;padding:0}
+.sub li{margin:2px 0}
+.sub .ok::before{content:'\2713  ';font-weight:700}
+.sub .todo{color:var(--text-secondary)}
+.sub .todo::before{content:'\25CB  '}
+.note{margin:8px 0 0}
+
+</style></head>
+<body>
+<header class="gallery-head"><h1>B3-M Manual Repair</h1><p>B3-M on a phone: request open, confirmation sheet, after confirming, and the Mitigated result.</p><p>Graphite Ledger, light and dark. Static mock: no scripts, system fonts. Collapsible sections open and close natively. Names, times and IDs are placeholders.</p></header>
+<main class="modes">
+<section class="mode t-light" aria-label="Light mode"><div class="mode-label">Light mode</div><div class="states"><div class="state"><p class="state-cap">1 &middot; B3-M request open (Recovery plan closed, review state kept)</p><div class="phone"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; Back</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair needed</span></div>
+<div class="screen"><article class="card" aria-label="Manual repair request"><div class="chips"><span class="cchip critical">Severity: Critical</span><span class="cchip waiting">Repair status: Manual repair needed</span></div>
+<p class="meta">Cluster shop-us-1 &middot; node n-7</p>
+<section class="ask" aria-label="What we're asking"><h2>What we're asking</h2>
+<p>A network card on one of your servers is failing.</p><p>An Orvex engineer moves the server to its standby connection, tonight 01:00&ndash;03:00 CET.</p><p>Your connection may be interrupted while the work is done.</p></section><section class="sec"><h2>1. The problem</h2><p class="lead">A network card on one of your servers is failing. The server may lose its connection.</p></section>
+<section class="sec"><h2>2. Customer impact</h2><p><strong>Now:</strong> everything works.</p><p><strong>In about 1 hour:</strong> checkout may slow down or stop.</p></section>
+<section class="sec"><h2>3. What this changes</h2><p class="changes">What this changes: your production</p></section>
+<section class="sec"><h2>4. What will be done</h2><div class="mpanel"><p>An Orvex engineer moves the server's network to its standby connection.</p>
+<ol><li>Drain <button class="term" type="button" aria-expanded="false">node</button> n-7</li><li>Move its IP to the standby interface</li><li>Restore traffic and check connectivity</li></ol>
+<p class="cap">Steps from Orvex's tested <button class="term" type="button" aria-expanded="false">repair catalogue</button>, not written by AI.</p></div></section>
+<section class="sec"><h2>5. Who will do it, and when</h2><p><strong>Who:</strong> an Orvex engineer</p><p><strong>When:</strong> tonight, 01:00&ndash;03:00 CET</p></section>
+<section class="sec"><h2>6. Risk level</h2><div class="chips"><span class="cchip critical">Risk level: Dangerous</span></div><p>Dangerous: always done by a person, never automatically.</p></section>
+<section class="sec"><h2>7. Expected interruption</h2><p>Connectivity may be interrupted. Duration unknown.</p></section>
+<details class="sec"><summary><span class="sumrow"><h2>8. Recovery plan</h2><span class="toggle" aria-hidden="true"><span class="show">Show &#9662;</span><span class="hide">Hide &#9652;</span></span></span>
+<span class="closed-line">Review needed: Orvex reviews this plan before work starts</span></summary><div class="body"><p>Review needed: Orvex reviews this plan before work starts.</p><p>The Orvex engineer who gives technical approval reviews it. If the review materially changes the plan, we'll ask you again.</p></div></details>
+<section class="sec"><h2>9. Approvals still required</h2><p>Your own approval is needed: Orvex support can't approve this on your behalf.</p><p><button class="term" type="button" aria-expanded="false">Orvex technical approval</button>: needed</p></section>
+<section class="sec"><h2>10. If you don't answer</h2><p>Nothing is changed. We keep watching and call you if it gets worse.</p></section><div class="btns"><button class="bp" type="button">Approve this manual repair</button><button class="bs" type="button">Reject</button></div></article></div></div></div><div class="state"><p class="state-cap">2 &middot; After tapping Approve: confirmation sheet</p><div class="phone fixed"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; Back</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair needed</span></div>
+<div class="screen"><div class="behind" aria-hidden="true" inert><article class="card"><div class="chips"><span class="cchip critical">Severity: Critical</span><span class="cchip waiting">Repair status: Manual repair needed</span></div>
+<p class="meta">Cluster shop-us-1 &middot; node n-7</p>
+<section class="ask" aria-label="What we're asking"><h2>What we're asking</h2>
+<p>A network card on one of your servers is failing.</p><p>An Orvex engineer moves the server to its standby connection, tonight 01:00&ndash;03:00 CET.</p><p>Your connection may be interrupted while the work is done.</p></section><section class="sec"><h2>1. The problem</h2><p class="lead">A network card on one of your servers is failing. The server may lose its connection.</p></section>
+<section class="sec"><h2>2. Customer impact</h2><p><strong>Now:</strong> everything works.</p><p><strong>In about 1 hour:</strong> checkout may slow down or stop.</p></section>
+<section class="sec"><h2>3. What this changes</h2><p class="changes">What this changes: your production</p></section>
+<section class="sec"><h2>4. What will be done</h2><div class="mpanel"><p>An Orvex engineer moves the server's network to its standby connection.</p>
+<ol><li>Drain <button class="term" type="button" aria-expanded="false">node</button> n-7</li><li>Move its IP to the standby interface</li><li>Restore traffic and check connectivity</li></ol>
+<p class="cap">Steps from Orvex's tested <button class="term" type="button" aria-expanded="false">repair catalogue</button>, not written by AI.</p></div></section>
+<section class="sec"><h2>5. Who will do it, and when</h2><p><strong>Who:</strong> an Orvex engineer</p><p><strong>When:</strong> tonight, 01:00&ndash;03:00 CET</p></section>
+<section class="sec"><h2>6. Risk level</h2><div class="chips"><span class="cchip critical">Risk level: Dangerous</span></div><p>Dangerous: always done by a person, never automatically.</p></section>
+<section class="sec"><h2>7. Expected interruption</h2><p>Connectivity may be interrupted. Duration unknown.</p></section>
+<details class="sec"><summary><span class="sumrow"><h2>8. Recovery plan</h2><span class="toggle" aria-hidden="true"><span class="show">Show &#9662;</span><span class="hide">Hide &#9652;</span></span></span>
+<span class="closed-line">Review needed: Orvex reviews this plan before work starts</span></summary><div class="body"><p>Review needed: Orvex reviews this plan before work starts.</p><p>The Orvex engineer who gives technical approval reviews it. If the review materially changes the plan, we'll ask you again.</p></div></details>
+<section class="sec"><h2>9. Approvals still required</h2><p>Your own approval is needed: Orvex support can't approve this on your behalf.</p><p><button class="term" type="button" aria-expanded="false">Orvex technical approval</button>: needed</p></section>
+<section class="sec"><h2>10. If you don't answer</h2><p>Nothing is changed. We keep watching and call you if it gets worse.</p></section></article></div></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Confirm your decision">
+<p class="lead">Approve the manual repair of node n-7 on shop-us-1 for tonight 01:00&ndash;03:00 CET? Connectivity may be interrupted. Duration unknown.</p>
+<button class="bp" type="button">Approve this manual repair</button><button class="bs" type="button">Cancel</button></div></div></div><div class="state"><p class="state-cap">3 &middot; After confirming (23:58 CET)</p><div class="phone"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; My clusters</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair approved</span></div>
+<div class="screen"><article class="card after" aria-label="Manual repair approval recorded">
+<p class="result" role="status">You approved this manual repair for tonight 01:00&ndash;03:00 CET. Waiting for Orvex technical approval.</p>
+<section class="sec" style="margin-top:16px"><h2>Move node n-7 to its standby network &middot; shop-us-1</h2>
+<ol class="steps" aria-label="Repair progress">
+<li><span class="cchip waiting">Repair status: Manual repair needed</span>
+  <ul class="sub"><li class="ok">You approved &middot; 23:58 CET</li><li class="todo">Orvex technical approval: needed</li><li class="todo">Recovery plan: review needed</li></ul></li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="future">Work in progress</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="future">Verifying (Nightshift is checking)</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="future">Succeeded / Mitigated / Problem still there</li>
+</ol><p class="meta">Updated 20 s ago</p></section>
+<div class="btns"><p class="meta" style="margin:0 0 4px">You can withdraw your approval until the work starts.</p><button class="bs" type="button">Withdraw my approval</button></div>
+</article></div></div></div><div class="state"><p class="state-cap">4 &middot; Later: Nightshift's check finds a workaround (Mitigated)</p><div class="phone"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; My clusters</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair</span></div>
+<div class="screen"><article class="card after" aria-label="Manual repair result">
+<section class="sec" style="border-top:0;padding-top:0"><h2>Move node n-7 to its standby network &middot; shop-us-1</h2>
+<ol class="steps" aria-label="Repair progress">
+<li class="done">Manual repair needed</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="done">Work in progress</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="done">Verifying (Nightshift is checking)</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li><span class="cchip warning">Repair status: Mitigated</span></li>
+</ol>
+<p class="note">Connection stable on the standby interface. The network card still needs replacing; the problem stays open until it is replaced and Nightshift has checked that the cluster is healthy.</p>
+<p class="meta">Started 01:10 CET &middot; reported done by Marc 01:22 CET &middot; checked by Nightshift</p>
+<p class="meta">Updated 30 s ago</p></section>
+</article></div></div></div></div></section>
+<section class="mode t-dark" aria-label="Dark mode"><div class="mode-label">Dark mode</div><div class="states"><div class="state"><p class="state-cap">1 &middot; B3-M request open (Recovery plan closed, review state kept)</p><div class="phone"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; Back</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair needed</span></div>
+<div class="screen"><article class="card" aria-label="Manual repair request"><div class="chips"><span class="cchip critical">Severity: Critical</span><span class="cchip waiting">Repair status: Manual repair needed</span></div>
+<p class="meta">Cluster shop-us-1 &middot; node n-7</p>
+<section class="ask" aria-label="What we're asking"><h2>What we're asking</h2>
+<p>A network card on one of your servers is failing.</p><p>An Orvex engineer moves the server to its standby connection, tonight 01:00&ndash;03:00 CET.</p><p>Your connection may be interrupted while the work is done.</p></section><section class="sec"><h2>1. The problem</h2><p class="lead">A network card on one of your servers is failing. The server may lose its connection.</p></section>
+<section class="sec"><h2>2. Customer impact</h2><p><strong>Now:</strong> everything works.</p><p><strong>In about 1 hour:</strong> checkout may slow down or stop.</p></section>
+<section class="sec"><h2>3. What this changes</h2><p class="changes">What this changes: your production</p></section>
+<section class="sec"><h2>4. What will be done</h2><div class="mpanel"><p>An Orvex engineer moves the server's network to its standby connection.</p>
+<ol><li>Drain <button class="term" type="button" aria-expanded="false">node</button> n-7</li><li>Move its IP to the standby interface</li><li>Restore traffic and check connectivity</li></ol>
+<p class="cap">Steps from Orvex's tested <button class="term" type="button" aria-expanded="false">repair catalogue</button>, not written by AI.</p></div></section>
+<section class="sec"><h2>5. Who will do it, and when</h2><p><strong>Who:</strong> an Orvex engineer</p><p><strong>When:</strong> tonight, 01:00&ndash;03:00 CET</p></section>
+<section class="sec"><h2>6. Risk level</h2><div class="chips"><span class="cchip critical">Risk level: Dangerous</span></div><p>Dangerous: always done by a person, never automatically.</p></section>
+<section class="sec"><h2>7. Expected interruption</h2><p>Connectivity may be interrupted. Duration unknown.</p></section>
+<details class="sec"><summary><span class="sumrow"><h2>8. Recovery plan</h2><span class="toggle" aria-hidden="true"><span class="show">Show &#9662;</span><span class="hide">Hide &#9652;</span></span></span>
+<span class="closed-line">Review needed: Orvex reviews this plan before work starts</span></summary><div class="body"><p>Review needed: Orvex reviews this plan before work starts.</p><p>The Orvex engineer who gives technical approval reviews it. If the review materially changes the plan, we'll ask you again.</p></div></details>
+<section class="sec"><h2>9. Approvals still required</h2><p>Your own approval is needed: Orvex support can't approve this on your behalf.</p><p><button class="term" type="button" aria-expanded="false">Orvex technical approval</button>: needed</p></section>
+<section class="sec"><h2>10. If you don't answer</h2><p>Nothing is changed. We keep watching and call you if it gets worse.</p></section><div class="btns"><button class="bp" type="button">Approve this manual repair</button><button class="bs" type="button">Reject</button></div></article></div></div></div><div class="state"><p class="state-cap">2 &middot; After tapping Approve: confirmation sheet</p><div class="phone fixed"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; Back</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair needed</span></div>
+<div class="screen"><div class="behind" aria-hidden="true" inert><article class="card"><div class="chips"><span class="cchip critical">Severity: Critical</span><span class="cchip waiting">Repair status: Manual repair needed</span></div>
+<p class="meta">Cluster shop-us-1 &middot; node n-7</p>
+<section class="ask" aria-label="What we're asking"><h2>What we're asking</h2>
+<p>A network card on one of your servers is failing.</p><p>An Orvex engineer moves the server to its standby connection, tonight 01:00&ndash;03:00 CET.</p><p>Your connection may be interrupted while the work is done.</p></section><section class="sec"><h2>1. The problem</h2><p class="lead">A network card on one of your servers is failing. The server may lose its connection.</p></section>
+<section class="sec"><h2>2. Customer impact</h2><p><strong>Now:</strong> everything works.</p><p><strong>In about 1 hour:</strong> checkout may slow down or stop.</p></section>
+<section class="sec"><h2>3. What this changes</h2><p class="changes">What this changes: your production</p></section>
+<section class="sec"><h2>4. What will be done</h2><div class="mpanel"><p>An Orvex engineer moves the server's network to its standby connection.</p>
+<ol><li>Drain <button class="term" type="button" aria-expanded="false">node</button> n-7</li><li>Move its IP to the standby interface</li><li>Restore traffic and check connectivity</li></ol>
+<p class="cap">Steps from Orvex's tested <button class="term" type="button" aria-expanded="false">repair catalogue</button>, not written by AI.</p></div></section>
+<section class="sec"><h2>5. Who will do it, and when</h2><p><strong>Who:</strong> an Orvex engineer</p><p><strong>When:</strong> tonight, 01:00&ndash;03:00 CET</p></section>
+<section class="sec"><h2>6. Risk level</h2><div class="chips"><span class="cchip critical">Risk level: Dangerous</span></div><p>Dangerous: always done by a person, never automatically.</p></section>
+<section class="sec"><h2>7. Expected interruption</h2><p>Connectivity may be interrupted. Duration unknown.</p></section>
+<details class="sec"><summary><span class="sumrow"><h2>8. Recovery plan</h2><span class="toggle" aria-hidden="true"><span class="show">Show &#9662;</span><span class="hide">Hide &#9652;</span></span></span>
+<span class="closed-line">Review needed: Orvex reviews this plan before work starts</span></summary><div class="body"><p>Review needed: Orvex reviews this plan before work starts.</p><p>The Orvex engineer who gives technical approval reviews it. If the review materially changes the plan, we'll ask you again.</p></div></details>
+<section class="sec"><h2>9. Approvals still required</h2><p>Your own approval is needed: Orvex support can't approve this on your behalf.</p><p><button class="term" type="button" aria-expanded="false">Orvex technical approval</button>: needed</p></section>
+<section class="sec"><h2>10. If you don't answer</h2><p>Nothing is changed. We keep watching and call you if it gets worse.</p></section></article></div></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Confirm your decision">
+<p class="lead">Approve the manual repair of node n-7 on shop-us-1 for tonight 01:00&ndash;03:00 CET? Connectivity may be interrupted. Duration unknown.</p>
+<button class="bp" type="button">Approve this manual repair</button><button class="bs" type="button">Cancel</button></div></div></div><div class="state"><p class="state-cap">3 &middot; After confirming (23:58 CET)</p><div class="phone"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; My clusters</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair approved</span></div>
+<div class="screen"><article class="card after" aria-label="Manual repair approval recorded">
+<p class="result" role="status">You approved this manual repair for tonight 01:00&ndash;03:00 CET. Waiting for Orvex technical approval.</p>
+<section class="sec" style="margin-top:16px"><h2>Move node n-7 to its standby network &middot; shop-us-1</h2>
+<ol class="steps" aria-label="Repair progress">
+<li><span class="cchip waiting">Repair status: Manual repair needed</span>
+  <ul class="sub"><li class="ok">You approved &middot; 23:58 CET</li><li class="todo">Orvex technical approval: needed</li><li class="todo">Recovery plan: review needed</li></ul></li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="future">Work in progress</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="future">Verifying (Nightshift is checking)</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="future">Succeeded / Mitigated / Problem still there</li>
+</ol><p class="meta">Updated 20 s ago</p></section>
+<div class="btns"><p class="meta" style="margin:0 0 4px">You can withdraw your approval until the work starts.</p><button class="bs" type="button">Withdraw my approval</button></div>
+</article></div></div></div><div class="state"><p class="state-cap">4 &middot; Later: Nightshift's check finds a workaround (Mitigated)</p><div class="phone"><div class="speaker" aria-hidden="true"><span></span></div>
+<div class="portal-bar"><a href="#">&lsaquo; My clusters</a><span aria-hidden="true">&middot;</span><span class="ttl">Manual repair</span></div>
+<div class="screen"><article class="card after" aria-label="Manual repair result">
+<section class="sec" style="border-top:0;padding-top:0"><h2>Move node n-7 to its standby network &middot; shop-us-1</h2>
+<ol class="steps" aria-label="Repair progress">
+<li class="done">Manual repair needed</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="done">Work in progress</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li class="done">Verifying (Nightshift is checking)</li>
+<li class="arrow" aria-hidden="true">&darr;</li><li><span class="cchip warning">Repair status: Mitigated</span></li>
+</ol>
+<p class="note">Connection stable on the standby interface. The network card still needs replacing; the problem stays open until it is replaced and Nightshift has checked that the cluster is healthy.</p>
+<p class="meta">Started 01:10 CET &middot; reported done by Marc 01:22 CET &middot; checked by Nightshift</p>
+<p class="meta">Updated 30 s ago</p></section>
+</article></div></div></div></div></section>
+</main>
+</body></html>

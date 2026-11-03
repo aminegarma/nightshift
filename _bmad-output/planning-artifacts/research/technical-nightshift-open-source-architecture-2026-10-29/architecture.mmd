@@ -1,0 +1,59 @@
+flowchart TB
+  subgraph OMK[Customer OMK management network]
+    BMC[BMC Redfish or IPMI - read-only telemetry]
+  end
+  subgraph WC[One customer workload cluster - raw evidence stays here]
+    HOST[Node metrics, kernel logs, SMART, NPD]
+    KAPI[Kubernetes API and opted-in application signals]
+    COL[Existing agents or Fluent Bit and optional OTel]
+    STORE[Local Prometheus, logs, optional traces]
+    RULE[Rules, trend checks and incident correlation]
+    EV[Fixed-query evidence service]
+    AI[Restricted investigation adapter]
+    LOCAL[Optional local inference]
+    FACT[Positive-schema fact builder and egress verifier]
+    PROPOSE[Typed catalogue repair request]
+    AUTH[Local approval verifier and embedded OPA]
+    EXEC[Scoped executor, locks and precondition checks]
+    VERIFY[Health verification, stop or compensation]
+    STATE[Durable action state, audit and bounded outbox]
+    CHECK[Independent heartbeat and freshness checker]
+    HB[Independent bounded heartbeat schema validator]
+    FLUX[Local Flux and cached tested release]
+  end
+  subgraph CC[Optional customer control cluster]
+    MGMT[Coordination and sanitized customer dashboard]
+  end
+  subgraph ORVEX[Orvex fleet - tenant-isolated services]
+    API[Fleet status and authenticated approval relay]
+    DB[Sanitized metadata and approval records]
+    RELEASE[Reviewed signed catalogue and release registry]
+  end
+  WATCH[External watchdog in separate power and network domain]
+  PERSON[Customer or delegated support and Orvex approver]
+  HOSTED[Trusted hosted inference - sanitized facts only]
+  BMC --> COL
+  HOST --> COL
+  KAPI --> COL
+  COL --> STORE --> RULE
+  STORE --> EV --> AI
+  AI --> LOCAL --> AI
+  EV --> FACT --> HOSTED
+  HOSTED --> AI
+  RULE --> PROPOSE
+  AI -. catalogue suggestion only .-> PROPOSE
+  PROPOSE --> AUTH --> EXEC --> VERIFY
+  EXEC --> KAPI
+  VERIFY --> STATE
+  AUTH --> STATE
+  CHECK --> STATE
+  CHECK --> HB --> WATCH
+  STATE --> FACT
+  FACT --> MGMT --> API --> DB
+  FACT --> API
+  PERSON --> API
+  API -. signed approval or stop instruction .-> AUTH
+  RELEASE --> FLUX
+  FLUX -. tested software and catalogue delivery .-> RULE
+  FLUX -. tested executor release .-> EXEC
+  WATCH --> PERSON
