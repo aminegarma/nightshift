@@ -214,7 +214,7 @@
   - EBS force detach is "only as a last resort" and can damage the file system.
   - Kubernetes' safe route (the `out-of-service` taint) requires that the node is **verified** powered off. On EKS that means EC2 state; on OMK, the BMC, after its identity is re-checked. A powered-off reading is evidence only; stateful takeover also needs a verified fencing and storage-safety procedure (spine AD-62), otherwise it's manual.
   - Kubernetes already force-detaches after 6 minutes on an unhealthy node, with a risk of data corruption if the workload is still running.
-- **Possible later catalogue repair:** the `out-of-service` taint, only with verified power-off and Orvex approval.
+- **Possible later catalogue repair:** the `out-of-service` taint, only under a verified fencing and storage-safety procedure (spine AD-62) with Orvex approval; a power-off reading alone isn't enough.
 
 ## 18. Storage backend degraded
 
