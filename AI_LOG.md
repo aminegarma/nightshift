@@ -443,3 +443,8 @@ These five show the pattern best: the AI made a reasoned recommendation, and Ami
 88. **2026-11-15, PRD update, remaining points.** *(The stale-tier point is an overrule of an AI recommendation, listed as overrule #14; the roster-update point is a correction of an AI error.)* Amine corrected two of the AI's recommendations:
     - **Stale tier:** the AI recommended letting Orvex technical approvals already received in the cluster still count. Amine rejected this as a silent exception to conflict 4's rule: actions needing fresh Orvex authority pause when stale.
     - **Roster updates:** the AI was about to describe roster updates in the Fleet service channel as data-free. They carry people, roles and credential keys, so the channel lists exact permitted fields and discloses them.
+89. **2026-11-15, cost model v5.** Amine corrected how the AI presented customer costs:
+    - **Readable as a bill:** the $126 and $176 table looked like a real customer bill. Resources now come first, and dollar figures are labelled as indicative cloud-priced value.
+    - **Checker in the baseline:** the AI had counted Nightshift's independent checker inside the without-Nightshift baseline.
+    - **Spending range:** the AI claimed the customer's extra spending was "between $0 and one extra node". Larger clusters can need more, and spare capacity doesn't make power, storage and network free.
+    - **Also required:** the reuse calculation is now explained exactly, without counting existing monitoring twice. The local-AI options keep existing hardware, buying (Danny's 24 GB and 96 GB) and renting separate. The table answers Danny's question directly.

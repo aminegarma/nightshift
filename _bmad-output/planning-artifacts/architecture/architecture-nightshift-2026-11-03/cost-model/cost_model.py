@@ -83,7 +83,8 @@ BASELINE_TOOLING_FTE = {100: [0.5, 1, 1.5], 10000: [2, 3, 5]}  # PROVISIONAL: ru
 # Base = midpoint. Components research doesn't cover are mapped to the nearest envelope, marked "mapped (AI)".
 SERVICES = {
     "Prometheus, one replica": ((0.2, 1.0), (0.5, 2.0), "research §9"),
-    "Alertmanager + kube-state-metrics + probes/independent checker": ((0.05, 0.25), (0.15, 0.5), "research §9"),
+    "Alertmanager + kube-state-metrics + probes": ((0.05, 0.25), (0.15, 0.5), "research §9 (its envelope also covered a checker; the baseline keeps all of it)"),
+    "independent checker (Nightshift)": ((0.05, 0.2), (0.125, 0.5), "PLACEHOLDER: mapped (AI) to the controller envelope; v5 moved it out of the baseline row"),
     "executor (controller + policy + outbox)": ((0.05, 0.2), (0.125, 0.5), "research §9"),
     "gateway + outbox": ((0.05, 0.2), (0.125, 0.5), "mapped (AI) to the controller envelope"),
     "agent (reader)": ((0.1, 1.0), (0.25, 1.0), "mapped (AI) to 'optional investigation worker'"),
@@ -93,7 +94,7 @@ SERVICES = {
     "log storage (VictoriaLogs)": ((0.1, 0.5), (0.25, 1.0), "research §9 'local Loki/service storage' envelope"),
 }
 PER_NODE = ((0.05, 0.30), (0.15, 0.50), "research §9: node_exporter + NPD + log agent + optional SMART, per node")
-MONITORING_ONLY = {"Prometheus, one replica", "Alertmanager + kube-state-metrics + probes/independent checker",
+MONITORING_ONLY = {"Prometheus, one replica", "Alertmanager + kube-state-metrics + probes",
                    "log storage (VictoriaLogs)"}  # what a manual baseline would still run
 # Disk per cluster (GB): research §9: Prometheus samples 2-4 GB for 7 days (index/WAL extra); logs 1 GB/day raw x 7 days;
 # per-node log spool 0.5-2 GB. Audit and outbox: PLACEHOLDER (AI placeholder 1/2/5 GB).
@@ -125,7 +126,10 @@ def footprint(i, baseline=False):
 
 
 def footprint_reuse(i):
-    """Customer already runs suitable monitoring: add only Nightshift's own components plus extra load."""
+    """Customer incremental footprint (v5): the cluster runs ONE monitoring stack either way (baseline), so only
+    Nightshift's own components are added, plus an assumed extra load (PLACEHOLDER 20%) on the three shared
+    monitoring components Nightshift queries and alerts through: Prometheus, Alertmanager + kube-state-metrics +
+    probes, and log storage. Per-node collectors are not loaded extra. Existing monitoring is not counted again."""
     full_vc, full_gb, full_disk, _ = footprint(i)
     base_vc, base_gb, base_disk, _ = footprint(i, baseline=True)
     mon = [v for k, v in SERVICES.items() if k in MONITORING_ONLY]
@@ -244,8 +248,22 @@ def gpu_variants():
     return out
 
 
+def customer_increment(i):
+    vc, gb, disk, value = footprint_reuse(i)
+    return {"vcpu": vc, "gib": gb, "disk_gb": disk, "value": value}
+
+
+def node_steps(vcpu, gib, node_vcpu=2, node_gib=8, node_price=0.12075 * H):
+    """Example only: whole m7i.large nodes needed if NO spare capacity exists (ignores allocatable overhead)."""
+    import math
+    nodes = max(math.ceil(vcpu / node_vcpu), math.ceil(gib / node_gib))
+    return nodes, nodes * node_price
+
+
 def money(x):
-    return f"${x:,.2f}" if x < 100 else f"${x:,.0f}"
+    sign = "-" if x < 0 else ""
+    x = abs(x)
+    return sign + (f"${x:,.2f}" if x < 100 else f"${x:,.0f}")
 
 
 def orvex_cash(r):
@@ -344,9 +362,94 @@ def print_target():
     print()
 
 
+def print_danny():
+    """Answer: cost per cluster per month at 100 and 10,000 clusters, hosted vs in-cluster AI; what moves it most."""
+    ci = customer_increment(1)
+    gv = dict(gpu_variants())["base"]
+    print("## Answer: cost per cluster per month (base scenario, v5)\n")
+    print("All figures are estimates under labelled assumptions; nothing is measured. Orvex figures are cash. Customer figures are resources first, then an *indicative* value at AWS Frankfurt on-demand prices, which is not a bill. Hosted and in-cluster AI are not assumed to give equal quality.\n")
+    print("| Case | Orvex cost per cluster | Customer: extra resources | Customer: indicative value of those resources | Customer: AI hardware | Without Nightshift (Orvex cost) | Orvex saving (+) or extra cost (-) |")
+    print("|---|---|---|---|---|---|---|")
+    res = f"{ci['vcpu']:.2f} vCPU, {ci['gib']:.1f} GiB RAM, {ci['disk_gb']:.0f} GB disk"
+    for n in (100, 10_000):
+        w = model(n, 1); b = model(n, 1, baseline=True)
+        hosted = orvex_cash(w); local = hosted - w["t2"]; base = orvex_cash(b)
+        print(f"| Hosted AI, {n:,} clusters | {money(hosted)} | {res} | {money(ci['value'])} | none (Orvex pays tokens: {money(w['t2'])}) | {money(base)} | {money(base - hosted)} |")
+        print(f"| In-cluster AI, {n:,} clusters | {money(local)} | {res}, plus the model's own GPU and host resources (not sized) | {money(ci['value'])} | per option below | {money(base)} | {money(base - local)} |")
+    print()
+    print("**In-cluster AI hardware, per cluster that uses it, per month** (only where the customer wants it; most customers are not assumed to buy a GPU):\n")
+    print("| Option | Cost per month | What it is |\n|---|---|---|")
+    rows = [("Existing spare 24 GB datacenter GPU (L4-class)", "existing spare 24 GB datacenter GPU (L4-class, 72 W): power only", "already owned: power only; no purchase"),
+            ("Existing spare 24 GB consumer GPU", "existing spare 24 GB consumer GPU (~350 W, assumption): power only", "already owned: power only"),
+            ("New 24 GB GPU (Danny's ~$1,000 option)", "new 24 GB consumer GPU (~$1,000, Danny): 36-month amortisation + power + host share $20 + maintenance 10%/yr", "purchase spread over 36 months + power + host share + maintenance"),
+            ("New 96 GB GPU (Danny's ~$10,000 option; listings ~$14-16k)", "new 96 GB GPU ($10,000 Danny / $15,000 Codex listing): amortisation + power (~600 W, assumption) + host share $40 + maintenance", "purchase spread over 36 months + power + host share + maintenance"),
+            ("EKS GPU instance g6.xlarge, always on", "EKS g6.xlarge (L4) always on", "rented, list price"),
+            ("EKS GPU instance started on demand", "EKS g6.xlarge started on demand (0.15 unfamiliar problems/month x 0.5 h, plus 1 h/day warm window)", "rented by the hour; warm window and start-up delay are PLACEHOLDERS")]
+    for label, key, what in rows:
+        print(f"| {label} | {money(gv[key])} | {what} |")
+    print("\nBoundary: hardware or instance, power, hosting share and maintenance. Excluded: staff time to run models, evaluation, spares. Wattages, load, PUE, electricity prices, host shares and maintenance rates are PLACEHOLDERS (see the source table).\n")
+    nodes, step = node_steps(ci["vcpu"], ci["gib"])
+    print("**Actual extra spending for the customer vs indicative value:**\n")
+    print(f"- **Resources (estimate):** {res} per cluster (research §9 envelope midpoints; 10 nodes).")
+    print(f"- **Indicative value:** {money(ci['value'])} a month at Frankfurt on-demand prices. This is what the capacity would cost if bought as cloud capacity, not what the customer pays.")
+    print("- **If spare capacity exists:** no new server or node is bought. Power, cooling, storage and network for that load are still real costs; they are **not estimated** (missing: measured power per vCPU on customer hardware, and the customer's network prices).")
+    print(f"- **If no spare capacity exists:** capacity is added in whole steps, for example {nodes} m7i.large node{"s" if nodes != 1 else ""} ≈ {money(step)} a month on EKS list price; bigger clusters or the high scenario can need more than one. On OMK it means buying or reallocating hardware (price unknown).")
+    print("- **Disk on EKS** (Nightshift's audit and outbox volume) is real spending even with spare compute.\n")
+    print("**Orvex saving (base scenario):**\n")
+    print("| Scale | Per cluster per month | Fleet per month | Fleet per year | With $50k / $130k engineer-year |\n|---|---|---|---|---|")
+    for n in (100, 10_000):
+        sv = orvex_cash(model(n, 1, baseline=True)) - orvex_cash(model(n, 1))
+        lo = orvex_cash(model(n, 1, ENGINEER["low"], True)) - orvex_cash(model(n, 1, ENGINEER["low"]))
+        hi = orvex_cash(model(n, 1, ENGINEER["high"], True)) - orvex_cash(model(n, 1, ENGINEER["high"]))
+        print(f"| {n:,} clusters | {money(sv)} | {money(sv * n)} | {money(sv * n * 12)} | {money(lo)} / {money(hi)} per cluster |")
+    print()
+    print("Scenario range at 10,000 clusters (Orvex saving per cluster per month): " + ", ".join(
+        f"{S[i]} {money(orvex_cash(model(10_000, i, baseline=True)) - orvex_cash(model(10_000, i)))}" for i in range(3)) + ".\n")
+
+
+
+def final_summary_rows(n):
+    """Final summary (2026-11-15): Orvex cash + customer indicative increment + AI host/GPU cost, per AI option."""
+    w = model(n, 1)
+    hosted = orvex_cash(w); local = hosted - w["t2"]
+    inc = customer_increment(1)["value"]
+    gv = dict(gpu_variants())["base"]
+    opts = [
+        ("Hosted AI", hosted, 0.0, "tokens are in Orvex's cost", "estimate"),
+        ("Existing customer GPU (L4-class, power only)", local, gv["existing spare 24 GB datacenter GPU (L4-class, 72 W): power only"],
+         "GPU power only; host CPU/RAM/server not included", "incomplete subtotal"),
+        ("New 24 GB GPU (Danny's ~$1,000)", local, gv["new 24 GB consumer GPU (~$1,000, Danny): 36-month amortisation + power + host share $20 + maintenance 10%/yr"],
+         "amortisation + GPU power + host-share PLACEHOLDER + maintenance", "estimate"),
+        ("New 96 GB GPU (Danny's ~$10,000; listings ~$14-16k)", local, gv["new 96 GB GPU ($10,000 Danny / $15,000 Codex listing): amortisation + power (~600 W, assumption) + host share $40 + maintenance"],
+         "amortisation + GPU power + host-share PLACEHOLDER + maintenance", "estimate"),
+        ("EKS GPU instance, always on (g6.xlarge)", local, gv["EKS g6.xlarge (L4) always on"],
+         "rental includes the instance's CPU, RAM and power", "estimate"),
+        ("EKS GPU instance, on demand (g6.xlarge)", local, gv["EKS g6.xlarge started on demand (0.15 unfamiliar problems/month x 0.5 h, plus 1 h/day warm window)"],
+         "rental while running; warm window PLACEHOLDER", "estimate"),
+    ]
+    return [(name, o, inc, ai, o + inc + ai, note, kind) for name, o, ai, note, kind in opts]
+
+
+def print_final_summary():
+    print("## Final summary: cost per cluster per month, hosted AI or an in-cluster GPU (base scenario)\n")
+    print("Columns: **Orvex operating cost** is cash. **Customer increment** is the *indicative* cloud-priced value of Nightshift's extra CPU, RAM and disk (not a bill; see the answer table). **Model host and GPU** is the AI option's own cost (cash or amortised cash); EKS rental already includes the instance's CPU, RAM and power, so nothing is added twice. **Combined estimate** adds the three and therefore mixes cash with indicative value. Figures assume comparable workloads; model quality and the model's resource use are untested.\n")
+    print("| AI option | 100: Orvex | 100: customer increment | 100: model host and GPU | 100: combined | 10,000: Orvex | 10,000: customer increment | 10,000: model host and GPU | 10,000: combined |")
+    print("|---|---|---|---|---|---|---|---|---|")
+    r100 = final_summary_rows(100); r10k = final_summary_rows(10_000)
+    for a, b in zip(r100, r10k):
+        flag = " (incomplete subtotal)" if a[6] == "incomplete subtotal" else ""
+        print(f"| {a[0]} | {money(a[1])} | {money(a[2])} | {money(a[3])} | {money(a[4])}{flag} | {money(b[1])} | {money(b[2])} | {money(b[3])} | {money(b[4])}{flag} |")
+    base100 = orvex_cash(model(100, 1, baseline=True)); base10k = orvex_cash(model(10_000, 1, baseline=True))
+    print(f"| *Without Nightshift (Orvex only)* | {money(base100)} | – | – | {money(base100)} | {money(base10k)} | – | – | {money(base10k)} |")
+    print()
+    print("Notes: the existing-GPU row counts GPU power only (a partial cost: host CPU, RAM and server use are missing), so its combined figure is an incomplete subtotal. New-GPU rows include a host share that is a PLACEHOLDER. The customer increment is the same in every row; the model's own host resources are separate. Biggest drivers: Orvex's people (round-the-clock cover at 100 clusters; the share of problems needing a person at 10,000), Nightshift's in-cluster footprint and whether spare capacity absorbs it, and the GPU choice.\n")
+
+
 if __name__ == "__main__":
-    print("# Cost model results (round 8, generated by cost_model.py; frozen working model v4, 2026-11-11)\n")
+    print("# Cost model results (round 8, generated by cost_model.py; model v5, 2026-11-15: checker moved out of the baseline; customer increment defined; answer table added)\n")
     print("All usage numbers are unvalidated assumptions; PLACEHOLDER and PROVISIONAL mark inputs without a source. Prices: AWS Frankfurt list prices, 2026-11-11, a comparison basis only. Savings and break-even hold only **under these assumptions**. Round 4's 95/90/80% is the share of problems the catalogue **supports**, not the share resolved automatically.\n")
+    print_final_summary()
+    print_danny()
     for n in (100, 10_000):
         print_staffing(n)
     print_target()

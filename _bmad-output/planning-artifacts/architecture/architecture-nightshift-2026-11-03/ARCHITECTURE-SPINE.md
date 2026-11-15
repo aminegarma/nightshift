@@ -816,7 +816,7 @@ sequenceDiagram
 | 5.9 Learn across the fleet (FR-37..FR-41) | Report intake, catalogue pipeline, signing system | AD-26, AD-40, AD-43, AD-52 |
 | 5.10 Code fixes (FR-42..FR-45) | Gateway to Bedrock, optional llama.cpp | AD-38, AD-37, AD-36 |
 | 5.11 Manage the fleet (FR-46..FR-49) | Fleet services, Flux, rollback guard | AD-39..AD-46 |
-| Cost (COST-1..COST-6) | Cost model companion | AD-36, AD-37; cost-model v4 (frozen) |
+| Cost (COST-1..COST-6) | Cost model companion | AD-36, AD-37; cost model v5 (2026-11-15) |
 
 ## Deferred
 

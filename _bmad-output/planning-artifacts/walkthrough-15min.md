@@ -40,13 +40,22 @@ Speaker notes for presenting the Nightshift design to Danny and the Orvex team. 
 
 ## 9:30–11:30 · Cost (criterion: cost)
 
-- **Point:** hosted AI tokens are tiny (about $0.02 per cluster per month). The in-cluster footprint and people are what cost money.
-- **Show:** §12 and `cost-model/cost-model-results.md`.
+- **Point:** answer Danny's question in one table: cost per cluster per month at 100 and 10,000 clusters, with a hosted model and with in-cluster AI.
+- **Show:** the **final summary table** at the top of §12 (hosted AI and each GPU option, at 100 and 10,000 clusters), then §12.5 (savings, who pays, the drivers). Appendix D holds the calculations.
 - **Land:**
-  - Orvex cash and the customer's footprint are shown separately.
-  - At 10,000 clusters, Nightshift needs far fewer engineers than manual operation under the stated assumptions. At 100 clusters, round-the-clock cover sets the cost on both sides.
-  - "About 15 engineers" is a target. The model shows what has to be true to reach it.
-  - Every input is either sourced or labelled as a placeholder.
+  - **Orvex** pays about $10.81 per cluster per month at 10,000 clusters, against $48.75 without Nightshift. That saves about $38 per cluster, or about $4.5 million a year. At 100 clusters there's no saving, because round-the-clock cover sets the cost either way.
+  - **Customers** give each cluster about 1.5 vCPU, 2.8 GiB and 2 GB, worth about $65 a month at cloud prices. Actual spending depends on spare capacity, and power and network aren't free. A GPU only where they want local AI: from about $8 (an existing L4) to $735 (an always-on EKS GPU).
+  - **Hosted tokens** are about $0.02 per cluster per month.
+  - **Combined, per cluster at 10,000:**
+    - hosted AI: about $76;
+    - a new 24 GB GPU: about $170;
+    - a new 96 GB GPU: about $633;
+    - an always-on EKS GPU: about $810;
+    - an EKS GPU on demand: about $106.
+
+    These mix Orvex cash with indicative customer value, and an existing GPU is a partial figure.
+  - **The biggest drivers:** Orvex's people, Nightshift's footprint and spare capacity, and the local GPU choice.
+  - **Everything is an estimate:** placeholders are labelled, and AI quality is untested.
 
 ## 11:30–13:00 · Failures (criterion: honest thinking)
 
