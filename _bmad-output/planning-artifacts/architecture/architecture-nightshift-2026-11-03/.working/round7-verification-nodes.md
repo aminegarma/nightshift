@@ -1,0 +1,25 @@
+# Round 7 verification: node and network items 4, 5, 6, 8, 20 (checked 2026-11-11; research agent, primary sources)
+
+- **4 NIC hung or flapping:**
+  - Bare metal: node_exporter netclass (enabled by default): node_network_carrier, carrier_changes_total, carrier_up/down_changes_total, node_network_up. Kernel: "NETDEV WATCHDOG: CPU: %d: transmit queue %u timed out %u ms" in sch_generic.c dev_watchdog() (read via the GitHub mirror); match on the prefix.
+  - EKS: node monitoring agent NetworkingReady condition, reasons InterfaceNotUp / InterfaceNotRunning, repair action Replace (node-health-nma).
+  - **Drain** (kubectl_drain): DaemonSet pods are never deleted (needs --ignore-daemonsets); --delete-emptydir-data loses local data; bare pods need --force; --disable-eviction bypasses PDBs (**never used**).
+  - **Eviction API:** 429 = PDB block *or* rate limiting; 500 = several PDBs on one pod.
+  - Undo = uncordon; evicted pods aren't restored, and emptyDir data is lost.
+- **5 L2/L3:**
+  - EKS: ENA allowance counters (bw_in/out_allowance_exceeded, pps_, conntrack_, linklocal_allowance_exceeded, conntrack_allowance_available), cumulative since driver reset, ENA ≥ 2.2.10 (monitoring-network-performance-ena). These are **shaping drops, not fault indicators**. The node monitoring agent emits them as events only, with no repair. Reachability Analyzer = configuration analysis, charged per run.
+  - Bare metal: node_exporter netdev/netclass only.
+  - Kubernetes has no native L2/L3 signal (unverified negative).
+- **6 NotReady and power:**
+  - Ready Unknown after node-monitor-grace-period (default 50 s): Unknown → unreachable taint, False → not-ready taint. Default tolerationSeconds 300 (pods stay bound 5 minutes).
+  - Redfish: Power deprecated in favour of PowerSubsystem; PowerSupply LineInputStatus Normal / LossOfInput / OutOfRange. Older BMCs may expose only the legacy Power resource (unverified per vendor).
+  - EKS: StatusCheckFailed_System includes "Loss of system power".
+  - **EKS auto repair** (node-repair): Auto Mode (always on), managed node groups (opt-in) and Karpenter (feature gate); not Windows. Waits: Ready 30 min; Kernel / Networking / Storage / ContainerRuntime 30 min; AcceleratedHardware 10 min. **No repair** for DiskPressure or MemoryPressure. Stops when more than 20% of nodes are unhealthy (managed node groups larger than 5 nodes) and during an ARC zonal shift. Auto Mode and Karpenter before v1.15 delete pods with a minimal grace period, **bypassing PDBs**. Irreversible (node replaced).
+- **8 Memory hardware:**
+  - Bare metal: node_exporter edac (enabled by default): node_edac_correctable_errors_total, uncorrectable_errors_total, plus per-csrow/channel with dimm_label.
+  - **EKS:** the node monitoring agent has **no host ECC detection** (GPU and Neuron only). EC2 scheduled events (instance-stop, instance-retirement, instance-reboot, system-reboot, system-maintenance) via describe-instance-status.
+- **20 Capacity:**
+  - Signal: FailedScheduling "insufficient cpu".
+  - Cluster Autoscaler controls the ASG's DesiredReplicas.
+  - Auto Mode: Karpenter-based, shaped by NodePools.
+  - UpdateNodegroupConfig scalingConfig: asynchronous, update ID, 409 ResourceInUse, reversible by setting the values again. **A manual desiredSize can be overridden by Cluster Autoscaler (inferred).** Insufficient-capacity errors can block scale-up. Karpenter details unverified.
