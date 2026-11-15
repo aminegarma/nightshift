@@ -11,7 +11,7 @@
 
 **Ranking:** a labelled judgement (no fleet data yet), using impact on customer production if missed, then likelihood on cheap bare metal and EKS, then how much Nightshift can do.
 
-**Sources:** facts checked 2026-11-11 against primary sources, recorded with quotes in `.working/round7-verification-storage.md`, `.working/round7-verification-nodes.md` and `.working/round7-verification-control.md`. "Unverified" marks what couldn't be confirmed.
+**Sources:** facts checked 2026-11-11 against primary sources, recorded with quotes in [appendix-c-failure-catalogue-sources.md](appendix-c-failure-catalogue-sources.md). "Unverified" marks what couldn't be confirmed.
 
 **Defaults that apply everywhere:**
 - **Missing or stale evidence:** no disruptive action; the panel shows "out of date" (O-1); escalate if the problem was already serious (coordinator point 8).
@@ -212,7 +212,7 @@
 - **Predict:** no.
 - **Action: report and escalate only.**
   - EBS force detach is "only as a last resort" and can damage the file system.
-  - Kubernetes' safe route (the `out-of-service` taint) requires that the node is **verified** powered off. On EKS that means EC2 state; on OMK, the BMC.
+  - Kubernetes' safe route (the `out-of-service` taint) requires that the node is **verified** powered off. On EKS that means EC2 state; on OMK, the BMC, after its identity is re-checked. A powered-off reading is evidence only; stateful takeover also needs a verified fencing and storage-safety procedure (spine AD-62), otherwise it's manual.
   - Kubernetes already force-detaches after 6 minutes on an unhealthy node, with a risk of data corruption if the workload is still running.
 - **Possible later catalogue repair:** the `out-of-service` taint, only with verified power-off and Orvex approval.
 
