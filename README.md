@@ -1,43 +1,70 @@
 # Nightshift
 
-**Status (2026-11-03): product brief, PRD and UX are final; the architecture is in progress.** This repository holds my work on the Orvex AI "Nightshift" design challenge. It is a design, not a working product.
+**Status (2026-11-15): design complete for hand-in.** The product brief, PRD, UX and architecture are final; the privacy and security review, failure catalogue and cost model are written. This is a design, not a working product: no control or repair described here has been tested yet.
 
-Nightshift is an ops agent that runs inside every Quornex cluster. It watches the cluster, fixes what is safe to fix, warns before things break, and explains what it did to the people responsible. The challenge is to design it so that private cloud on cheap, unreliable bare metal can be operated reliably and at very low cost per cluster.
+Nightshift is an ops agent that runs inside every Quornex cluster, on bare metal (OMK) and on EKS. It watches the cluster, fixes what is safe to fix, warns before things break, and explains what it did to the people responsible. Quornex Fleet watches and updates all Nightshift agents centrally, so that Orvex can run 10,000 clusters with a small team.
 
-## How the work is done
+## The hand-in
 
-The documents are produced with [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) workflows and Claude Code, with Codex used for some cross-checks. Every decision traces back to the challenge brief, to Danny's recorded answers, or to my own decisions. `AI_LOG.md` records how the AI was used, including the times I overruled it and the corrections I made to its output.
+| Asked for | Where it is |
+|---|---|
+| **The PRD, produced with BMAD** | [`prd.md`](_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/prd.md) (final, updated 15 November with the architecture's changes AP-1 to AP-20), with its [`addendum.md`](_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/addendum.md) and decision log |
+| **The architecture, with diagrams** | [`architecture-orvex.md`](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/architecture-orvex.md) (the readable document, with a 15-minute reading path at the top) and [`ARCHITECTURE-SPINE.md`](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/ARCHITECTURE-SPINE.md) (the build contract: 72 decisions). Appendices: [A. outbound flows](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/appendix-a-outbound-flows.md), [B. PRD changes](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/appendix-b-proposed-prd-changes.md), [C. failure-catalogue sources](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/appendix-c-failure-catalogue-sources.md). Tool choices and rejected alternatives: [`tool-comparison.md`](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/tool-comparison.md) |
+| **A privacy and security review** | [`privacy-security-review.md`](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/privacy-security-review.md): specified design controls, remaining risks and validation not yet performed, kept separate |
+| **A failure catalogue** | [`failure-catalogue.md`](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/failure-catalogue.md): the top 20 failures, each *predict*, *fix* or *only report*, for OMK and EKS |
+| **A cost model** | [`cost-model/`](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/cost-model/README.md): a reproducible script and its [results](_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/cost-model/cost-model-results.md) at 100 and 10,000 clusters, every input labelled with its source or as a placeholder |
+| **AI_LOG.md** | [`AI_LOG.md`](AI_LOG.md): how Claude and BMAD were used, **five overrules to read first**, the full list of overrules, and every correction to the AI's output |
+| **A README ending with open questions** | This file |
+
+Also: the UX ([`EXPERIENCE.md`](_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/EXPERIENCE.md), [`DESIGN.md`](_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/DESIGN.md), wireframes and mockups) and the [product brief](_bmad-output/planning-artifacts/briefs/brief-nightshift-2026-10-25/brief.md).
+
+## Where to look for each judging criterion
+
+| Criterion | Start here |
+|---|---|
+| Technology choices | `tool-comparison.md`; Orvex document §10 (open-source choices and rejected alternatives) |
+| One design for bare metal and EKS | Orvex document §2 (what runs where, and what changes between OMK and EKS) |
+| Privacy and security | `privacy-security-review.md`; Orvex document §4–§5 |
+| Cost | Orvex document §12 and `cost-model/` (Orvex cash and customer footprint shown separately; savings hold only under the stated assumptions) |
+| AI fluency | `AI_LOG.md`: the five overrules, then the corrections |
+| Honest thinking | The validation plan in `privacy-security-review.md`, PRD Section 10, and the open questions below |
+
+## How the work was done
+
+The documents were produced with [BMAD-METHOD](https://github.com/bmad-code-org/BMAD-METHOD) workflows and Claude Code, with Codex used for some cross-checks. Every decision traces back to the challenge brief, to Danny's recorded answers, or to my own choices, and is logged in an append-only `.memlog.md` in each workspace.
 
 | Step | Status |
 |---|---|
 | 1. Product brief | Final, 28 October |
-| 2. PRD | Final, updated 3 November |
-| 3. PRD validation | Done: two full validation rounds (30 and 31 October) and focused reviews of the updates of 2 and 3 November. Latest consolidated report: [`validation-report-after.md`](_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/history/reviews/validation-report-after.md). Remaining findings are listed below. |
-| 4. UX | Final, 3 November: two experiences (Orvex console and customer view), wireframes, three key-screen mockups and a three-lens review |
-| 5. Architecture | In progress: started 3 November (draft spine, decision log and working notes). The technical research on open-source building blocks (29 October) is an input, not adopted. |
-| 6. Adversarial review | After the architecture |
-| 7. Small prototype | Optional |
+| 2. PRD | Final, last updated 15 November (architecture reconciliation, AP-1 to AP-20) |
+| 3. PRD validation | Two full validation rounds (30 and 31 October), focused reviews of the November updates, and a finalisation check on 15 November |
+| 4. UX | Final, 3 November; references updated 15 November |
+| 5. Architecture | Final, 15 November, after a reviewer gate (four independent reviewers), a `bmad-review` of the Orvex document and focused consistency checks |
+| 6. Adversarial review | Done on the architecture (reports in `architecture-…/reviews/`) |
+| 7. Prototype | Not built: optional in the challenge brief |
 
-**Remaining validation findings:**
-- **PRD:** the critical and high findings of the 3 November review were decided or fixed. One high is deferred as a proposal: an independent reviewer for manual dangerous repairs. Some medium and low findings were fixed in the same round. The rest stay open in [`review-update2-rubric.md`](_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/history/reviews/review-update2-rubric.md) and [`review-update2-adversarial.md`](_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/history/reviews/review-update2-adversarial.md). Design-level findings from the earlier rounds are handed to the architecture and the security review in the PRD addendum.
-- **UX:** the 3 critical and 21 high findings were resolved. The remaining medium and low findings are deferred to the next UX update: see section 3 of [`open-items-2026-11-03.md`](_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/.working/open-items-2026-11-03.md).
+**What I'd test next** (nothing below has been run):
+- **Prompt injection:** seeded malicious logs, names, field values, model responses and source-code comments, checking permissions, evidence validation, queue limits and what reaches outbound messages and approval screens.
+- **Privacy:** planted-secret tests (PRIV-7).
+- **Network:** default-deny rules and the three purpose-specific outbound controls, on both OMK and EKS.
+- **AI usage checks:** isolation, revocation and logging tests for the per-cluster AI credentials.
+- **Approvals:** feasibility and usability of the passkey plus SMS confirmation, including its latency targets.
+- **Clock and restore:** clock rollback, restarts and state-restore behaviour against the offline validity tiers.
+- **Cost inputs:** footprints, handling times and the share of problems needing a person, measured on the first clusters.
 
 ## Repository layout
 
 | Path | What it is |
 |---|---|
-| `AI_LOG.md` | Session log, times I overruled the AI, corrections to the AI's output |
+| `AI_LOG.md` | Session log, overrules, corrections to the AI's output |
 | `_bmad-output/planning-artifacts/requirements-checklist.md` | Deliverables, constraints and evaluation criteria extracted from the challenge brief |
-| `_bmad-output/planning-artifacts/danny-qa-summary.md` | Questions to Danny and his answers, paraphrased, with my interpretations marked. The correspondence itself is kept private, outside the repository. |
-| `_bmad-output/planning-artifacts/briefs/brief-nightshift-2026-10-25/` | Product brief (final), addendum, decision log, landscape research and review |
-| `_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/` | PRD (`prd.md`, final), `addendum.md`, decision log and a `README.md` at the top level. Supporting reviews, reconciliations, snapshots, polish findings and notes are in `history/`. |
-| `_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/` | UX: `DESIGN.md` (visual identity, light and dark), `EXPERIENCE.md` (behaviour, flows, open items), `wireframes/` (Excalidraw: Orvex console and customer view), `mockups/` (palette sheet, three key screens, measured contrast), reviews and validation report |
-| `_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/` | Architecture (in progress): `ARCHITECTURE-SPINE.md` (draft), decision log and working notes |
-| `_bmad-output/planning-artifacts/research/` | Technical research on open-source building blocks for the architecture |
-| `_bmad-output/planning-artifacts/session-*.md` | Notes from the first two sessions (requirements discovery and an understanding check) |
-| `_bmad/`, `.claude/skills/` | The BMAD-METHOD 6.12.4 install and workflow skills used to produce the documents |
-
-Every `.memlog.md` is an append-only decision log. Its last `event` line shows where the work stopped.
+| `_bmad-output/planning-artifacts/danny-qa-summary.md` | Questions to Danny and his answers, paraphrased, with my interpretations marked. The correspondence itself is kept private, outside the repository |
+| `_bmad-output/planning-artifacts/briefs/brief-nightshift-2026-10-25/` | Product brief, addendum, decision log, landscape research and review |
+| `_bmad-output/planning-artifacts/prds/prd-nightshift-2026-10-28/` | PRD, addendum, decision log, update notes and reviews; older material in `history/` |
+| `_bmad-output/planning-artifacts/ux-designs/ux-nightshift-2026-10-31/` | UX: `DESIGN.md`, `EXPERIENCE.md`, wireframes, mockups, reviews |
+| `_bmad-output/planning-artifacts/architecture/architecture-nightshift-2026-11-03/` | Architecture: spine, Orvex document, privacy and security review, failure catalogue, cost model, appendices, tool comparison, reviews; `.working/` keeps the process history |
+| `_bmad-output/planning-artifacts/research/` | Technical research on open-source building blocks |
+| `_bmad/`, `.claude/skills/` | The BMAD-METHOD install and workflow skills used to produce the documents |
 
 ## Licence
 
@@ -45,38 +72,23 @@ Copyright 2026 Orvex AI. Licensed under the Apache License, Version 2.0; see `LI
 
 The BMAD-METHOD files in `_bmad/` and `.claude/skills/` are third-party software, Copyright (c) 2025 BMad Code, LLC, under the MIT License; see `THIRD_PARTY_LICENSES/BMAD-METHOD-LICENSE.txt`. BMad, BMad Method and BMad Core are trademarks of BMad Code, LLC.
 
-## Where the questions stand
-
-Live copies: Section 10 of the PRD and the follow-ups in `danny-qa-summary.md`.
-
-**Confirmed by Danny:**
-- **Approval:** not every repair needs both the customer and Orvex. Routine, tested platform repairs run automatically. Risky platform changes need an authorised Orvex engineer, and changes affecting customer production also need the customer. Dangerous repairs stay manual at first.
-- **Privacy:** the proposed boundary is a good starting point. External AI is allowed with the customer's consent and zero data retention, or a local model if nothing may leave.
-- **Reliability:** 99.9% a month is a working target, not a promise.
-- **Hardware:** customers are responsible for their own hardware, and a cluster belongs to one customer.
-- **Code fixes:** in the first version, as an experiment.
-
-**Our design policies** (decided by us, not confirmed by Danny):
-- **Approval:** risky repairs to the customer's own app need both the customer's approval and Orvex technical approval. This is our conservative interpretation of Danny's approval model (Exchange 5 speaks about platform changes), decided rather than open.
-- **Monitoring:** a customer's control cluster runs its own Nightshift agent, and Quornex Fleet watches it like any other.
-- **Escalation:** provider-side problems on hosted Kubernetes go through the customer.
-- **Code fixes:** a code fix is never approved on automated test results alone.
-- **Approval validity:** each repair in the catalogue states how long an approval stays valid.
-- **Outbound channels:** the Fleet heartbeat is required for the managed service. A strict no-outbound deployment is not offered in version 1.
-
-**Assumptions still to test:** about 250 problems a night (500 on a bad night) and about 15 engineers; the 30-minute last-resort threshold; whether a model on a 24 GB or 96 GB GPU is useful enough; whether sanitising keeps private data in the cluster; how well the predictive signals work.
-
 ## Open questions
 
-**For Danny** (not yet asked unless stated):
+Live copies: PRD Section 10, `danny-qa-summary.md` and the Deferred table of the spine.
+
+**For Danny and Orvex** (not yet asked unless stated):
 1. What monitoring and night cover does Orvex have today?
-2. Which hosted models and regions count as "trusted"? Partly answered: consent and zero retention are required.
-3. Code fixes use an in-cluster model by default and a hosted model only with the customer's consent. Does that fit Danny's wish to see them in real use? And how should they be priced?
+2. Which hosted models and regions count as "trusted"? Partly answered: consent and zero retention are required. Our design lets each customer choose its permitted AI Regions.
+3. How should code fixes be priced? (My proposal: by tokens or difficulty.)
 4. Who decides what counts as a "high-confidence" repair? (Never sent; our answer: the repair catalogue entry defines the evidence needed.)
 5. What happens when an approval request gets no answer at 3 AM? (Never sent; our proposal: nothing runs that isn't already authorised, and Nightshift alerts again.)
+6. OMK details we couldn't confirm: the Kubernetes distribution, network plugin, storage system, BMC Redfish support and how platform updates are applied and rolled back.
+7. Where Quornex Fleet is hosted, and whether Quornex's identity system can be reused.
+8. Is the "about 15 engineers for 10,000 clusters" target the Nightshift team alone, or all of Orvex's incident work? The cost model shows what would have to be true for each.
 
 **Design decisions still open:**
-6. Timing targets: how long a node heartbeat may be missing, when data counts as out of date, and the length of the window for undoing a rejection (for the architecture).
-7. Targets for harmful repairs, explanation feedback, Nightshift's footprint and the share of problems needing a person.
-8. The legal basis for the pre-ticked service settings at onboarding (for a legal review, owned by Orvex).
-9. Architecture-dependent UX details O-1 to O-13, such as approver roles, how a revocation reaches the cluster and the in-cluster dashboard (`EXPERIENCE.md`, Open items).
+9. Code-fix engineer access to the isolated test environment: needs its own consent and channel design.
+10. Targets still to set: harmful repairs, explanation feedback, Nightshift's footprint and the share of problems needing a person.
+11. The legal basis for the pre-ticked service settings at onboarding (for a legal review, owned by Orvex).
+
+**Assumptions still to test:** about 250 problems a night (500 on a bad night) and about 15 engineers; the 30-minute last-resort threshold; the offline validity tiers (1 hour, 24 hours) and the 2-minute undo window; whether a model on a 24 GB or 96 GB GPU is useful enough; whether sanitising keeps private data in the cluster; how well the chosen signals predict failures.
