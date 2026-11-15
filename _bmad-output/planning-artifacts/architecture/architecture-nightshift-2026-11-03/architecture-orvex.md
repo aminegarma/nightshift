@@ -8,7 +8,7 @@
 | **Failure catalogue (draft)** | [failure-catalogue.md](failure-catalogue.md) |
 | **Cost model (frozen working model v4)** | [cost-model/](cost-model/): [README](cost-model/README.md), [results](cost-model/cost-model-results.md) |
 | **Tool comparison and evidence** | [tool-comparison.md](tool-comparison.md) |
-| **Appendices** | [A. Outbound flows and channels (draft)](appendix-a-outbound-flows.md); [B. Proposed PRD changes (AP-1..AP-8)](appendix-b-proposed-prd-changes.md); [C. Failure catalogue sources](appendix-c-failure-catalogue-sources.md) |
+| **Appendices** | [A. Outbound flows and channels (draft)](appendix-a-outbound-flows.md); [B. PRD changes from the architecture (AP-1..AP-20, adopted 2026-11-15)](appendix-b-proposed-prd-changes.md); [C. Failure catalogue sources](appendix-c-failure-catalogue-sources.md) |
 
 > **What this is.** A design, not a finished production system. Nothing in it has been implemented, deployed or tested. Durations, sizes, resource figures and handling times are **assumptions to test** unless a source is given. Orvex asked for the reasoning and the trade-offs, "not a finished production design" (PRD Section 11). This document and its appendices stand alone; process history is kept in `.working/`.
 
@@ -347,7 +347,7 @@ sequenceDiagram
   R->>PO: status leaves "Sent — not yet effective in the cluster"
 ```
 
-**The SMS (AD-18).** The executor writes it from D and the catalogue template. The code is bound to the `decision_id`, recipient, request version and expiry, with attempt and resend limits. Each cluster has separately scoped SMS credentials, subject to provider support **[To verify]**. After every decision a post-decision notice follows ("You approved … Not you? Withdraw").
+**The SMS (AD-18).** The executor writes it from D and the catalogue template. The code is bound to the `decision_id`, recipient, request version and expiry, with attempt and resend limits. Each cluster has separately scoped SMS credentials, subject to provider support **[To verify]**. After every decision confirmed this way a post-decision notice follows ("You approved … Not you? Withdraw"). **Approval-SMS permission (PRD update 2026-11-15):** the code message and the post-decision notice are sent only under the customer's own approval-SMS permission, which names the SMS provider and the permitted fields; it is opt-in at onboarding, not pre-ticked, and separate from notifications, so turning notifications off never grants it. If it is declined, approvals need the enabled passkey-only fallback or are unavailable. **Stops** (reject, withdraw, untick) need a fresh passkey assertion but no SMS code; the post-stop notice (4.6) confirms them.
 
 | Part | Proves | Doesn't prove |
 |---|---|---|
@@ -358,7 +358,7 @@ sequenceDiagram
 
 **SMS abuse limits (AD-18).** against a gateway that sees the code, the SMS gives no independent proof of possession; the passkey signature over D remains the protection, and the risk that the person is shown a misleading message is documented. Provider-enforced recipient restrictions (roster numbers only), fixed templates, per-cluster rate limits and spending controls are used where the provider supports them, each verified before relying on it. Fleet monitors SMS use per cluster from the provider's own records, independently of the gateway; alerts and delayed billing checks are not hard caps.
 
-**Approval latency (AD-18, targets to test).** The budget covers the initial relay wait, cluster processing, SMS delivery and the person's entry time; starting targets are under 60 s from clicking Approve to receiving the code and under 60 s from submitting to the cluster's receipt. The gateway uses bounded fast polling or long-polling only while a confirmation is open, and the load is tested at 10,000 clusters. The one-time code's starting lifetime is 5 minutes; it never extends the repair approval's validity. The person sees distinct states: "sent", "received/applied by cluster", "expired" and "unreachable"; nothing is shown as effective before the cluster confirms it.
+**Approval latency (AD-18, targets to test).** The budget covers the initial relay wait, cluster processing, SMS delivery and the person's entry time; starting targets are under 60 s from clicking Approve to receiving the code and under 60 s from submitting to the cluster's receipt. The gateway uses bounded fast polling or long-polling only while a confirmation is open, and the load is tested at 10,000 clusters. The one-time code's starting lifetime is 5 minutes; it never extends the repair approval's validity. The person sees distinct states: "sent", "received by cluster" (not yet effective), "applied by cluster" (receipt), "expired" and "unreachable"; nothing is shown as effective before the cluster confirms it.
 
 **Passkey-only fallback** only where a signed policy enables it (customer-signed for customer approvals, Orvex-signed for Orvex ones), shown and recorded as reduced assurance. Otherwise, if the SMS can't be sent or its attempt and resend limits run out, the request stays open, escalation continues and the person sees "Confirmation code could not be sent" (AD-18, AD-49). **Requirements are never silently downgraded.** Option B covers customer, delegated and Orvex approvals and "Start now"; groups use 4.4.
 
@@ -398,7 +398,7 @@ sequenceDiagram
 - **Rosters (AD-19).** Customer roster changes are signed by an existing admin and notified to all admins. The first admin enrols with a split enrolment code (see First-admin enrolment below); the cluster pins that credential and registers the pin with Fleet, so a reinstall needs an existing admin or delayed recovery. The installer never enrols. Orvex operators could change the Fleet copy of the pin, but the cluster keeps its own and a change is visible to existing admins (stated limit). Sole-admin recovery waits a cancellable period **[value to set]**; Orvex-assisted recovery is always delayed and visible. The Orvex roster is signed by the people-list key. Neither roster grants the other's roles; revocation is a stop.
 - **First-admin enrolment (AD-19, provisional).** the cluster generates the one-time enrolment code at installation; the install workflow does not expose it. Delivery is split: one half is shown through protected local access, the other is sent by Fleet to the contractual customer contact, whose identity and contact details are verified independently of the install workflow. Both halves are bound to the exact cluster and enrolment session, with short expiry, one-time use and attempt limits. Protected local access before any admin exists: the local half is readable only through a narrowly scoped bootstrap path that the customer controls and the install identity cannot use (mechanism to verify per platform). Before the pin is registered with Fleet, the customer contact on record is notified and the enrolment is recorded in the cluster audit. If the enrolment is disputed, the pin is not trusted, the delayed sole-admin recovery procedure applies, and both Orvex and the customer are alerted. Limit: someone with cluster-admin at installation can still interfere (AD-72).
 - **People, not roles, are counted (AD-20).** A risky repair to the customer's app needs customer and Orvex technical approval from two different people. Orvex support acts for a customer only inside a customer-signed delegation (default off), never on settings or dangerous repairs, and the customer is notified.
-- **Performers (AD-21).** "Start now" needs valid approvals, the window, passing checks and option B. "I've done it" is a report that triggers verification, not an approval. Hardware providers report through a named customer person.
+- **Performers (AD-21).** "Start now" needs valid approvals, the window, passing checks and option B. "I've done it" is a report that triggers verification, not an approval; it is authenticated with a fresh passkey assertion and no SMS code, and only the named performer or the agreed customer representative may send it. For a hardware provider (in no roster), a named customer representative confirms the provider is ready, presses "Start now" and reports completion; the record names the representative and, where known, the provider and technician. Their confirmation replaces no approval or safety check, and "I've done it" triggers verification rather than closing the fault.
 
 ### 4.6 Stop beats go, and receipts
 
@@ -421,15 +421,15 @@ sequenceDiagram
 ### 4.7 Validity
 
 - **Approval validity (AD-25).** Per entry, from approval: **[Assumption]** 30 minutes for risky or customer-production repairs, 2 hours otherwise. The repair must start in time and re-checks preconditions; expiry doesn't interrupt it; changed evidence voids it. The cluster's clock decides (unsynchronised: time-limited approvals refused). Unanswered requests never expire. Every required approval must be valid when the repair starts; with unchanged evidence, a lapsed approval re-asks only that person (AD-17, AD-25). Undo-reject: 2 minutes **[Assumption]**.
-- **Offline tiers (AD-24, AP-4).** Long-lived objects (ticks, policies, rosters, delegations, channel permissions) also need a fresh relay-signed status statement. What still works per unreachable dependency: 9.1.
+- **Offline tiers (AD-24, AP-4 as adopted in the PRD 2026-11-15).** Long-lived objects (ticks, policies, rosters, delegations, channel permissions) also need a fresh relay-signed status statement. Permissions are classified by the authority they require, not by who signed them, and are never used beyond their own validity. What still works per unreachable dependency: 9.1.
 
   | Age of the last status statement **[Assumption]** | What may run |
   |---|---|
   | Fresh, under 1 h | All authorised repairs |
-  | Stale, 1 h to under 24 h | Only safe ticked and safe policy repairs |
-  | Expired, 24 h or more | No automatic repairs; observe and report |
+  | Stale, 1 h to under 24 h | Customer-only safe ticked repairs, within their own validity. Permissions requiring current Orvex authority pause: management-policy repairs, repairs needing Orvex technical approval (including approvals already received), the Orvex side of last resort. This moves the cutoff for safe policy repairs from 24 h to 1 h |
+  | Expired, 24 h or more | Customer-only safe ticked repairs, within their own validity; customer delegations only within their own validity and only for decisions already received; everything needing Orvex authority stops (management policy, Orvex technical approval, Orvex side of last resort, platform-only map); observe and report |
 
-  Cached outbound policies are **never widened** on a failed refresh. After expiry, only three things leave: the heartbeat, a fixed, data-free attention notice, and the fetches needed to recover (relay status statements and signed key lists, carrying only cluster identity and versions). Local stops keep working. A disconnected cluster learns of a revoked key only at its next key-list refresh, bounded by these tiers (AD-40).
+  **Stated limits:** portal unticks and fleet-wide catalogue switch-offs issued during the outage reach the cluster only on reconnection; a Fleet outage over 1 h pauses Orvex-authority repairs on every affected cluster. Turning portal access off (no new remote approvals, PRIV-9) is distinct from losing Fleet status, which alone drives the tiers. Cached outbound policies are **never widened** on a failed refresh. After expiry, only Fleet service channel flows leave: the heartbeat, a fixed attention notice (a fixed marker, no other content), and the fetches needed to recover (relay status statements, signed key lists, policy and roster updates; requests carry only cluster identity, versions and sequence numbers). Local stops keep working. A disconnected cluster learns of a revoked key only at its next key-list refresh, bounded by these tiers (AD-40).
 - **Clock protections (AD-24).** Every Fleet status statement carries an increasing signed sequence number; the cluster persists the latest accepted number, and a repeated or older statement never resets freshness. While disconnected, statement age is measured with a local monotonic timer from receipt; reboots never extend permission validity, and if age cannot be established safely after a restart, permissions are treated as expired until fresh confirmation arrives. A statement whose signed issue time is ahead of the local clock by more than the allowed skew is refused, and a backward clock jump raises an alarm. If no time source or Fleet statement has confirmed the clock for longer than a set limit, the clock counts as unsynchronised and time-limited approvals are refused (AD-25). Tier boundaries: fresh under 1 h, stale from 1 h to under 24 h, expired at 24 h or more. Authenticated time (for example NTS) is optional hardening to verify. Restart and restore behaviour (including an etcd or ledger restore) is verified. Limit: a compromised host or cluster-admin can still manipulate time and stored state (AD-72).
 - **State restore (AD-24).** Fleet keeps the last epoch and status sequence number each cluster reported; on reconnect the cluster compares them with its own. If its values are lower, or a restore or reinstall is known, ordinary actions stay blocked and permissions are treated as expired; only authenticated recovery messages (fresh status statements, key lists, stops) are processed. Before repairs resume, state is reconciled against reality; approvals from before the restore are not revived automatically and need a new request version. Limit: a restore made while the cluster is disconnected is detected only when it reconnects. Restore reconciliation: before repairs resume after a detected or known restore, the cluster reconciles current stops, revocations and switch-offs with the relay (which re-sends the ones it holds for that cluster); this does not rely on knowing the exact restore point. If the retained records cannot establish current permissions safely, the cluster stays blocked and escalates.
 - **Request capacity (AD-2).** requests waiting for approval and active runs have separate bounded caps; capacity is reserved for urgent requests, and stops (which are not runs) always remain available. Repeats are merged into an existing request only when the executor confirms they are the same occurrence; a material change still needs a new request version and fresh approval. Waiting requests never expire by time (O-2); one is closed as "resolved, no longer needed" only after verification shows the problem is gone, and this is recorded and notified. When capacity is full, the problem is recorded within bounded storage, the status shows "approval request blocked: capacity full", and Orvex is alerted; local recording is bounded, not unlimited.
@@ -487,29 +487,31 @@ flowchart TB
 ### 5.1 Security boundaries
 
 - **Read-only agent (AD-3, AD-5).** Log text, Kubernetes names, BMC strings, metrics, model output and performer reports are **evidence, never instructions**. Repairs come only from the signed catalogue (AD-8).
-- **Default-deny network (AD-67).** Allowed explicitly: named internal peers, cluster DNS, the Kubernetes API where needed. Services authenticate callers; EKS pods can't reach IMDS. Only three paths bypass the gateway, each with its own authentication and allowlist: the heartbeat, Flux pulls and the AWS poller. **Tested on OMK and EKS;** gaps (non-enforcing CNI, host-network or privileged pods) are documented. AP-8 pending.
+- **Default-deny network (AD-67).** Allowed explicitly: named internal peers, cluster DNS, the Kubernetes API where needed. Services authenticate callers; EKS pods can't reach IMDS. Only three paths bypass the gateway: the heartbeat, Flux pulls and the AWS poller. Every outbound flow is still checked: for each of the three, permitted destinations, operations and request fields are defined, plus authentication and limits; read-only access or an allowlist alone is not sufficient. These purpose-specific controls are not automatically equivalent to the gateway's checks. **To be tested on OMK and EKS;** gaps (non-enforcing CNI, host-network or privileged pods) and residual risks are documented. AP-8 adopted into the PRD 2026-11-15.
 - **Local dashboard (AD-42, AD-51).** The one inbound endpoint: a stable hostname in the customer's internal DNS, reached through customer ingress or an internal load balancer; Nightshift never exposes it further. Local passkeys with exact origin and RP ID checks; stops and settings only, no approvals (9.3).
 - **Fact builder (AD-26).** Every outbound message on the gateway path (everything except the three bypass paths) is built in the gateway from typed, allowlisted fields, passes the outbound (PRIV-4) and consent (PRIV-8) checks, and is recorded for the customer (PRIV-7). Redaction is never the primary protection; a hosted model short of context gets the local model or a person, **never richer data**. Only code fixes carry source code (AD-38).
 - **Read scope (AD-61).** App and code sources are off until the customer opts in.
-- **Audit (AD-16).** Append-only, hash-chained, own boundary and volume; raw records stay local. Each record names its authenticated appender, rate-limited. Signed checkpoints stored outside make destruction **detectable, not recoverable**. Until AP-1 is accepted they use the Fleet reports channel; if that is off, the loss is recorded and shown.
-- **Heartbeat (AD-27).** Own path, fixed destination and schema; agent ID, timestamp and status only until AP-1 is accepted. No customer switch.
+- **Audit (AD-16).** Append-only, hash-chained, own boundary and volume; raw records stay local. Each record names its authenticated appender, rate-limited. Signed checkpoints stored outside make destruction **detectable, not recoverable**. With AP-1 accepted (PRD 2026-11-15), the checkpoint rides the heartbeat inside the Fleet service channel.
+- **Heartbeat (AD-27).** Own path, fixed destination and schema; agent ID (mapped to the cluster), timestamp, status (alive or degraded) and the AP-1 checkpoint fields `audit_seq`, `chain_head`, `checkpoint_time`, `audit_key_id`, `checkpoint_sig`, nothing else. Part of the Fleet service channel; no customer switch.
 - **Workloads never blocked (AD-64).** Nightshift's admission checks match its own namespaces only.
 
 ### 5.2 Outbound flows and channels (AD-70)
 
-PRIV-9 defines five channels: external AI, the Fleet heartbeat (required), Fleet reports, notifications and the portal. The draft [flow-to-channel table (Appendix A)](appendix-a-outbound-flows.md) assigns every outbound flow, with source, destination, path, fields and behaviour when the channel is off. **A flow not in the table is not allowed.**
+PRIV-9 (as updated 2026-11-15) defines these channels: the Fleet service channel (required), external AI, Fleet reports, notifications, the approval-SMS permission and the portal; EKS read-only AWS access is separately optional. The draft [flow-to-channel table (Appendix A)](appendix-a-outbound-flows.md) assigns every outbound flow, with source, destination, path, fields and behaviour when the channel is off. **A flow not in the table is not allowed.**
 
 | Channel | Flows (table rows) | If off |
 |---|---|---|
-| Fleet heartbeat (own path) | Heartbeat (1) | Can't be turned off |
-| Fleet reports | Sanitised reports, coverage, AI usage (2); audit checkpoints until AP-1 is accepted (3) | Out of correlation; checkpoint loss recorded |
+| Fleet service channel (required; disclosed at onboarding with exact fields; minimal service metadata, no raw logs, secrets or application content) | Heartbeat with audit checkpoint (1, 3); relay status statements and signed key lists, policy and roster updates (6; roster updates received contain roster data such as people, roles and credential public keys); fixed attention notice (6a); signed release, catalogue and model downloads (15) | Can't be turned off; interruptions follow the offline tiers (4.7) |
+| Fleet reports | Sanitised reports, coverage, AI usage (2); FR-12 signal (10) | Out of correlation; Orvex not told of confirmations |
 | Portal | D, requests, receipts, group leaves (4); fetched decisions (5); dashboard and summary data (7) | No remote approvals; local dashboard and stops still work |
-| Notifications | SMS codes, alerts, notices (8); phone, Slack (9) | Option B can't complete unless passkey-only is enabled; no external alerts |
+| Approval-SMS permission (opt-in) | Approval SMS codes and post-decision notices (8) | Approvals need the enabled passkey-only fallback, else unavailable |
+| Notifications | Alert SMS and post-stop notices (8a); phone, Slack (9) | No external alerts; stops show as unconfirmed until the receipt is seen |
+| AWS read access (EKS, optional) | AWS poller (16) | Reduced EKS coverage |
 | External AI | Bedrock calls to permitted Regions (11); credential vending (12); source code under its own consent (13) | Rules and templates only |
 | Customer estate | Management-agent links (17) | Cross-cluster repairs wait |
 | One-time setup | Install registrations: public keys, fingerprints (18) | Install can't complete |
 
-**No named PRIV-9 channel yet:** status statements, key lists, policy and roster updates (6); the FR-12 signal (10, proposed: Fleet reports); Flux downloads (15); the AWS poller (16). Proposed: extend AP-8 with "required service traffic" and the poller exception. The fixed attention notice sent after expiry (4.7) has no row yet. **Code-fix engineer access (14)** has no design, consent or channel.
+**Code-fix engineer access (14)** has no design, consent or channel (C-14, open).
 
 ### 5.3 Compromise cases
 
@@ -645,7 +647,7 @@ At 100 clusters: about $2.34 a month on Haiku at baseline. **Tokens only**, not 
 
 ### 7.7 Code fixes (AD-38)
 
-AP-6 pending. Hosted inference is the main v1 path when the customer **separately** authorises sending relevant source code to a zero-retention provider; code still passes secret scanning and PRIV-4 (AD-26). A local model is supported where hardware exists and the customer wants code kept inside; otherwise code fixes are unavailable while everything else continues. Source-code consent is off until opted in. About $0.25 per attempt on Sonnet 4.6 at reference prices (assumed 50k input, 5k output tokens); volume unknown. **Open:** the code-fix path (customer-specific entries, isolated test environment, deployment, per-transfer records) and **engineer access** to the test environment, which needs its own consent and channel (FR-44; Appendix A flow 14).
+AP-6 adopted into the PRD 2026-11-15. Hosted inference is the main v1 path when the customer **separately** authorises sending relevant source code to a zero-retention provider; code still passes secret scanning and PRIV-4 (AD-26). A local model is supported where hardware exists and the customer wants code kept inside; otherwise code fixes are unavailable while everything else continues. Source-code consent is off until opted in. About $0.25 per attempt on Sonnet 4.6 at reference prices (assumed 50k input, 5k output tokens); volume unknown. **Open:** the code-fix path (customer-specific entries, isolated test environment, deployment, per-transfer records) and **engineer access** to the test environment, which needs its own consent and channel (FR-44; Appendix A flow 14).
 
 ---
 
@@ -698,7 +700,7 @@ flowchart LR
 ```
 
 - **Waves (AD-44)** cover both platforms, judged per platform; silent clusters never join early waves. Sizes **[Assumption]**. A stop doesn't cancel a running update. The customer's signed update policy, not the schedule, decides (AD-53).
-- **Recovery (AD-45, AP-7):** Flux sits outside releases; the guard's probation rollback is exact and bounded (named previous release, probation window, failed check, rollback-safe only), part of the update authorisation and recorded. A release that isn't rollback-safe, or has no named previous release, gets no automatic rollback; after that, a person recovers through a manual runbook on the separate install path.
+- **Recovery (AD-45, AP-7):** Flux sits outside releases; the guard's probation rollback is exact and bounded (named previous release, probation window, failed check, rollback-safe only), part of the update authorisation and recorded. A security-update rollback needs an explicit advance customer policy covering the recovery version, the known vulnerability it reintroduces and the recovery limits; without it, Nightshift escalates urgently instead of rolling back automatically, and any rollback is followed by a plan to restore the security fix. A release that isn't rollback-safe, or has no named previous release, gets no automatic rollback; after that, a person recovers through a manual runbook on the separate install path.
 - **Probation as a dead-man's switch (A8):** a release passes only when the checker sends a fresh healthy signal tied to the exact release and probation attempt within the window; if it is missing, the guard triggers only the pre-authorised, rollback-safe recovery (otherwise a person is called). The checker and guard are updated separately from routine releases. Limit: shared node, network or Kubernetes API failures can still prevent recovery. False rollbacks are recorded, rollback loops are prevented (a release rolled back once is not re-applied automatically), and the problem is escalated if recovery cannot complete.
 - **Downgrade protection (AD-46):** only newer or signed rollback targets; expiring metadata exposes a held-back cluster.
 
@@ -720,7 +722,7 @@ It coordinates repairs spanning several workload clusters and **holds no authori
 
 ### 8.8 Fleet operations (AD-71)
 
-A Fleet outage doesn't stop customer workloads; Nightshift continues within offline limits, suspending automatic repairs after 24 hours without renewed confirmation (4.7). Fleet has **external monitoring outside itself**, **backup and restore procedures** and **provisional recovery targets**, with values set by Orvex.
+A Fleet outage doesn't stop customer workloads; Nightshift continues within offline limits: without renewed confirmation, permissions requiring Orvex authority pause after 1 hour and stop after 24 hours, while customer-only safe ticked repairs continue within their own validity (4.7). Fleet has **external monitoring outside itself**, **backup and restore procedures** and **provisional recovery targets**, with values set by Orvex.
 
 ---
 
@@ -734,7 +736,7 @@ What may still run as the last status statement ages is set by the validity tier
 
 | Unreachable | Keeps working | Stops or waits | Shown as |
 |---|---|---|---|
-| Fleet | Workloads, monitoring, repairs per tier, local stops, audit | Portal decisions, releases, AI credentials; after 24 h all automatic repairs | "Unreachable from Fleet"; "Sent — not yet effective in the cluster" |
+| Fleet | Workloads, monitoring, repairs per tier, local stops, audit | Portal decisions, releases, AI credentials; from 1 h repairs needing Orvex authority pause, from 24 h they stop | "Unreachable from Fleet"; "Sent — not yet effective in the cluster" |
 | Portal | Automatic work, heartbeat, reports | Approvals | Dashboard offers stops |
 | AI provider | Rules, templates | AI wording, unfamiliar analysis, code fixes | "AI explanation unavailable" |
 | SMS | Everything else | Option B, unless passkey-only is enabled | "Confirmation code could not be sent" |
@@ -941,10 +943,9 @@ Load (250 / 500 / 1,000 problems a day at 10,000 clusters; 95 / 90 / 80% support
 
 ### 13.3 Open design items
 
-- **AP-8 and flows without a PRIV-9 channel** (5.2).
-- **Code-fix engineer access** (own consent and channel) and the rest of the code-fix path (7.7).
+- **Enforcement of the purpose-specific controls** on the three paths outside the gateway (5.1, 5.2).
+- **Code-fix engineer access** (own consent and channel; C-14, open) and the rest of the code-fix path (7.7).
 - **Proposed mechanisms to confirm:** AD-53, AD-55, AD-57, AD-66 (4.8, 8.7).
-- **"I've done it" authentication level:** AP-2 proposes passkey without SMS; not yet decided.
 - **Keys:** signing-system operations; delivery path for policies and the Orvex roster.
 - **Hardware-action component (SEC-3):** after v1.
 - **Allowlists and rendering:** per-channel texts (O-11); neutralising attacker-controlled names (O-6); diagnostic access scope (AD-59).
@@ -960,17 +961,18 @@ Load (250 / 500 / 1,000 problems a day at 10,000 clusters; 95 / 90 / 80% support
 - **Hardware:** read-only BMC accounts; BMC-to-node binding.
 - **Catalogue and prototype:** three metric names; every repair tested and reviewed; recovery time and footprints measured.
 
-### 13.5 Proposed PRD changes (none is a PRD permission yet)
+### 13.5 PRD changes from the architecture (adopted into the PRD 2026-11-15)
 
-Full text: [Appendix B](appendix-b-proposed-prd-changes.md).
+Full text, including the conflict-decision refinements and AP-9 to AP-20: [Appendix B](appendix-b-proposed-prd-changes.md).
 
-| # | Proposed change | Affects |
+| # | Change (adopted 2026-11-15) | Affects |
 |---|---|---|
 | AP-1 | Minimal audit checkpoint in the heartbeat (fixed schema; about 32 bytes per heartbeat of possible covert channel) | FR-6, PRIV-9, NFR-4; UX onboarding |
-| AP-2 | Option B confirmation; passkey-only only where policy enables it, recorded as reduced assurance; also Orvex approvals and "Start now" | FR-13, FR-14, PRIV-3, PRIV-9, SEC-7; UX |
+| AP-2 | Option B confirmation; passkey-only only where policy enables it, recorded as reduced assurance; also Orvex approvals and "Start now". Approval SMS and post-decision notice under their own opt-in approval-SMS permission; stops and "I've done it" need a fresh passkey, no SMS; hardware provider through the named customer representative | FR-13, FR-14, PRIV-3, PRIV-9, SEC-7; UX |
 | AP-3 | "Sent — not yet effective in the cluster" until a signed receipt | FR-22; UX |
-| AP-4 | Fresh, stale and expired offline tiers | FR-22, FR-51, NFR-5; UX |
+| AP-4 | Fresh, stale and expired offline tiers, classified by required authority (4.7) | FR-22, FR-51, NFR-5; UX |
 | AP-5 | No API-dependent automatic repair while the API is down; control-plane failures escalate | PRD 3.1, FR-5, FR-20 |
 | AP-6 | Code fixes hosted first, under separate source-code consent | PRD 3.1, FR-43, FR-44, PRIV-6, Section 7; UX |
-| AP-7 | Bounded probation rollback inside the update authorisation | FR-47, FR-32, FR-33 |
-| AP-8 | Name the three gateway-bypass paths (heartbeat, Flux pulls, AWS poller) as the only exceptions, each allowlisted, with default-deny egress (design adopted, AD-67). Proposed extension: "required service traffic" for flows without a channel (5.2) | SEC-8, PRIV-9 |
+| AP-7 | Bounded probation rollback inside the update authorisation; security-update rollback only under an explicit advance customer policy, else urgent escalation | FR-47, FR-32, FR-33 |
+| AP-8 | Name the three gateway-bypass paths (heartbeat, Flux pulls, AWS poller) as the only exceptions, each allowlisted, with default-deny egress (AD-67), with purpose-specific controls; required Fleet service channel with exact fields; AWS poller separately optional (5.2) | SEC-8, PRIV-9 |
+| AP-9..AP-20 | First install and first admin; BMC read-only; stops when audit storage is full; cluster-admin limit; local dashboard; request capacity; group-approval assurance; 2-minute undo-reject (starting value); crash recovery; two-reviewer signing; paused rollouts; new status strings (pending UX review) | Appendix B |

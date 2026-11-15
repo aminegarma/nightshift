@@ -51,7 +51,7 @@ Medium and low review findings, and a few highs, that need a product decision or
   - How far a rejection reaches over ticked repairs for the same problem.
   - The green "Safe" chip clashes with "green means verified".
   - The default for delegation, and what revoking it does.
-  - A request code against phishing.
+  - A request code against phishing. Superseded by the approval confirmation (one-time code by text message plus passkey; PRD FR-14, architecture AP-2, PRD Update 2026-11-15).
   - Names an attacker controls, shown inside prose.
   - Settings changes in the history.
   - Each approval's validity, and the tick's version, on A3.
