@@ -252,8 +252,8 @@ sequenceDiagram
     alt approval still valid and AD-8 protections pass
       EX->>K: status = attempt 2, retry (UID precondition)
     else approval expired or protections not verified
-      EX->>K: no new forward step; pre-authorised safe-stop only if safe now
-      EX->>P: escalate; new request version if still needed
+      EX->>K: no new forward step, pre-authorised safe-stop only if safe now
+      EX->>P: escalate, new request version if still needed
     end
   else cannot tell
     EX->>K: status = ambiguous, stop
@@ -333,7 +333,7 @@ sequenceDiagram
   G->>R: fetch (cluster-initiated)
   G->>E: confirmation request
   E->>E: build and store D, keyed hash of a one-time code
-  E->>G: cluster-signed D; SMS text built from D and catalogue template
+  E->>G: cluster-signed D, SMS text built from D and catalogue template
   G->>R: D for the portal to display
   G->>S: SMS to the roster number (per-cluster credentials)
   S->>P: action, cluster, code, expiry
@@ -384,8 +384,8 @@ sequenceDiagram
   S->>J: repair, cluster count, waves, code
   J->>PO: code, fresh passkey assertion over G
   PO->>GS: code for this session
-  GS->>GS: accept only for the same approver, roster version and digest(G); sign attestation
-  C->>C: fetch G, assertion, attestation, own proof; run every check
+  GS->>GS: accept only for the same approver, roster version and digest(G), sign attestation
+  C->>C: fetch G, assertion, attestation, own proof, run every check
 ```
 
 - **G** holds entry and version, action, conditions, Merkle root, target count, wave plan, stop conditions, validity and session ID. Code session and attestation bind the **approver, Orvex roster version and digest(G)**.
@@ -847,7 +847,7 @@ Ranking is a labelled judgement (impact if missed, likelihood on cheap bare meta
 | 19 | Bad release across clusters | Fix: stop rollout, rollback guard | Same |
 | 20 | Not enough capacity | Predict; Report | Predict; propose scaling (customer approval; not where an autoscaler manages) |
 
-**Fixed v1 limits (AD-52, AD-59, AD-62):** no image deletion (kubelet garbage collection owns it); volume expansion irreversible; volume detach report-only; OMK control-plane certificates reported, not renewed; CoreDNS restart only as a tested risky repair; backups, customer data and Secrets never modified or deleted (backup health may be read where authorised); no hardware power actions; no moving stateful pods off a node not confirmed off.
+**Fixed v1 limits (AD-52, AD-59, AD-62):** no image deletion (kubelet garbage collection owns it); volume expansion irreversible; volume detach report-only; OMK control-plane certificates reported, not renewed; CoreDNS restart only as a tested risky repair; backups, customer data and Secrets never modified or deleted (backup health may be read where authorised); no hardware power actions; no moving stateful pods off an unreachable node without a verified fencing and storage-safety procedure (AD-62).
 
 **[To verify]:** OMK distribution, CNI, storage and Redfish; three metric names (CNI Metrics Helper, node_exporter `timex`, kernel I/O error patterns).
 
